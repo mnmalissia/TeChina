@@ -1,12 +1,47 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <meta namea="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Directivos | Asistente IA AURA</title>
+    <link href="style.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <a href="principal.html">por alla
-    </a>
+<div class="login-container">
+    <div class="logo"><i class="fas fa-robot"></i> AURA</div>
+    <div class="sub">Asistente IA para Dirección Escolar</div>
+
+    <div id="loginForm">
+        <div class="input-group">
+            <label>Correo (Gmail)</label>
+            <input type="email" id="loginEmail" placeholder="director@ejemplo.com">
+        </div>
+        <div class="input-group">
+            <label>Contraseña</label>
+            <input type="password" id="loginPassword" placeholder="••••••••">
+        </div>
+        <button class="btn-auth" id="loginBtn">Iniciar Sesión</button>
+        <div id="loginMessage" class="message"></div>
+    </div>
+
+    <hr>
+
+    <div id="registerForm">
+        <div class="input-group">
+            <label>Nuevo correo (Gmail)</label>
+            <input type="email" id="regEmail" placeholder="nuevo@institucion.edu">
+        </div>
+        <div class="input-group">
+            <label>Contraseña</label>
+            <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres">
+        </div>
+        <button class="btn-auth btn-secondary" id="registerBtn">Registrarse</button>
+        <div id="regMessage" class="message"></div>
+    </div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>

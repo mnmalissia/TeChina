@@ -1,25 +1,571 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AURA | Asistente IA para Dirección Escolar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(145deg, #eef2f9 0%, #e0e8f0 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #1a2c3e;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+        .header p {
+            color: #2c3e66;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+        .badge-ai {
+            background: #2a5298;
+            color: white;
+            display: inline-block;
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            margin-top: 0.7rem;
+        }
+        .logout-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #e2e8f0;
+            border: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .logout-btn:hover {
+            background: #cbd5e1;
+        }
+
+        .cards-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+            justify-content: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 2rem;
+            width: 260px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            cursor: pointer;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .card:not(.no-expand):hover {
+            transform: translateY(-6px);
+            box-shadow: 0 25px 40px rgba(0,0,0,0.15);
+        }
+        .card:not(.no-expand):hover .expand-content {
+            max-height: 120px;
+            opacity: 1;
+            padding: 0 1.2rem 1rem 1.2rem;
+        }
+
+        .card-inner {
+            padding: 1.5rem 1.2rem;
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.8rem;
+        }
+        .card-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+        .card-sub {
+            color: #5a6e8a;
+            font-size: 0.8rem;
+        }
+
+        .expand-content {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.2s;
+            background: #f8fafd;
+            border-top: 1px solid #e2e8f0;
+            font-size: 0.85rem;
+            color: #1e3a5f;
+            font-weight: 500;
+        }
+
+        .info-panel {
+            background: white;
+            border-radius: 1.8rem;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+            padding: 1.8rem;
+            margin-top: 1rem;
+            transition: all 0.2s;
+            border: 1px solid #eef2ff;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.8rem;
+            margin-bottom: 1.2rem;
+        }
+        .panel-header h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .close-panel {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c7f8f;
+        }
+        .dynamic-content {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .contact-list, .group-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+        .contact-item, .group-item {
+            background: #f1f5f9;
+            padding: 0.8rem 1rem;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .contact-name {
+            font-weight: 700;
+            min-width: 150px;
+        }
+        .contact-role {
+            font-size: 0.8rem;
+            color: #2c5a7a;
+        }
+        .contact-phone {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 0.2rem 0.6rem;
+            border-radius: 40px;
+        }
+
+        .sub-option-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+        .sub-option-btn {
+            background: #eef2ff;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .sub-option-btn.active {
+            background: #2a5298;
+            color: white;
+        }
+        .flyer-card {
+            background: linear-gradient(145deg, #fff5e6, #ffe6d5);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid #ffcd94;
+        }
+        .flyer-img {
+            max-width: 100%;
+            border-radius: 1rem;
+            margin-top: 1rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        button.download-btn {
+            background: #1e3c72;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.4rem;
+            border-radius: 3rem;
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+
+        .guide-step {
+            margin-bottom: 1rem;
+            padding: 0.8rem;
+            background: #f8fafc;
+            border-radius: 1rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            color: #4a627a;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 680px) {
+            body { padding: 1rem; }
+            .card { width: 100%; max-width: 280px; }
+        }
+    </style>
 </head>
 <body>
-    <section class="menu">
-        <a href="wsp.html" class="card">
-          <span class="title">Whatsapp</span>
-          <div class="content">
-            <p>Enviar mensajes</p>
-            <p>Automatización</p>
-            <p>Contactos</p>
-          </div>
-        </a>
-      
-        <a href="excel.html" class="card">EX</a>
-        <a href="img.html" class="card">IMG</a>
-        <a href="#" class="card">Guía</a>
-      </section>
+<div class="dashboard">
+    <div class="header">
+        <h1><i class="fas fa-robot"></i> AURA · Asistente IA</h1>
+        <p>Plataforma inteligente para directivos y preceptores</p>
+        <div class="badge-ai"><i class="fas fa-microchip"></i> IA directiva · Gestión escolar unificada</div>
+        <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
+    </div>
+
+    <div class="cards-grid">
+        <!-- WhatsApp card -->
+        <div class="card" data-action="whatsapp">
+            <div class="card-inner">
+                <div class="card-icon"><i class="fab fa-whatsapp" style="color:#25D366;"></i></div>
+                <div class="card-title">WhatsApp</div>
+                <div class="card-sub">Contactos y grupos institucionales</div>
+            </div>
+            <div class="expand-content">
+                📱 Acceso rápido a representantes, tutores y grupos por año. Comunicación ágil con toda la comunidad.
+            </div>
+        </div>
+
+        <!-- Excel card (no expande en hover) -->
+        <div class="card no-expand" data-action="excel">
+            <div class="card-inner">
+                <div class="card-icon"><i class="fas fa-file-excel" style="color:#1F724C;"></i></div>
+                <div class="card-title">Excel</div>
+                <div class="card-sub">Gestión académica y datos</div>
+            </div>
+            <div class="expand-content" style="display: none;"></div>
+        </div>
+
+        <!-- Imagen card -->
+        <div class="card" data-action="imagen">
+            <div class="card-inner">
+                <div class="card-icon"><i class="fas fa-palette" style="color:#E67E22;"></i></div>
+                <div class="card-title">Imagen</div>
+                <div class="card-sub">Flyers conmemorativos IA</div>
+            </div>
+            <div class="expand-content">
+                🖼️ Generación de flyers para fechas patrias y eventos institucionales. Personaliza y comparte.
+            </div>
+        </div>
+
+        <!-- Guía card -->
+        <div class="card" data-action="guia">
+            <div class="card-inner">
+                <div class="card-icon"><i class="fas fa-compass" style="color:#3498db;"></i></div>
+                <div class="card-title">Guía</div>
+                <div class="card-sub">Manual de funciones IA</div>
+            </div>
+            <div class="expand-content">
+                📘 Explicación detallada de cada módulo, cómo aprovechar la IA y optimizar la gestión escolar.
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel dinámico donde se carga la información al hacer clic -->
+    <div id="infoPanel" class="info-panel">
+        <div class="panel-header">
+            <h3 id="panelTitle">Bienvenido, Director</h3>
+            <button class="close-panel" id="closePanelBtn">&times;</button>
+        </div>
+        <div id="panelContent" class="dynamic-content">
+            <p style="color:#4a627a;">✨ Selecciona una opción para visualizar información detallada. <br>Pasa el mouse sobre las tarjetas para conocer más.</p>
+        </div>
+    </div>
+    <footer>
+        <i class="fas fa-brain"></i> Asistente IA para gestión directiva · Datos simulados actualizados al ciclo lectivo 2025
+    </footer>
+</div>
+
+<script>
+    // ========== VERIFICACIÓN DE SESIÓN ==========
+    const session = sessionStorage.getItem('aura_session');
+    if (!session) {
+        window.location.href = 'login.html';
+    } else {
+        try {
+            const sessionData = JSON.parse(session);
+            if (!sessionData.loggedIn) throw new Error();
+        } catch(e) {
+            window.location.href = 'login.html';
+        }
+    }
+
+    // Cierre de sesión
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        sessionStorage.removeItem('aura_session');
+        window.location.href = 'login.html';
+    });
+
+    // ------------------- DATA MODEL (simulación realista) -------------------
+    const contactosRepresentantes = [
+        { nombre: "María Gutiérrez", rol: "Tutora 1°A", telefono: "+54 9 11 2345-6789", alumno: "Lucas G." },
+        { nombre: "Roberto Fernández", rol: "Tutor 1°B", telefono: "+54 9 11 3456-7890", alumno: "Camila F." },
+        { nombre: "Laura Méndez", rol: "Representante 2°A", telefono: "+54 9 11 4567-8901", alumno: "Joaquín M." },
+        { nombre: "Carlos Paredes", rol: "Tutor 2°B", telefono: "+54 9 11 5678-9012", alumno: "Sofía P." },
+        { nombre: "Ana Lucero", rol: "Representante 3°A", telefono: "+54 9 11 6789-0123", alumno: "Martín L." },
+        { nombre: "Fernanda Suárez", rol: "Tutora 3°B", telefono: "+54 9 11 7890-1234", alumno: "Valentina S." }
+    ];
+
+    const gruposWhatsApp = [
+        { año: "1er año", enlace: "https://chat.whatsapp.com/Ejemplo1", descripcion: "Grupo padres 1°A + 1°B" },
+        { año: "2do año", enlace: "https://chat.whatsapp.com/Ejemplo2", descripcion: "Grupo coordinación 2do año" },
+        { año: "3er año", enlace: "https://chat.whatsapp.com/Ejemplo3", descripcion: "Comunicados 3er año" },
+        { año: "Equipo directivo", enlace: "https://chat.whatsapp.com/Ejemplo4", descripcion: "Preceptores + directivos" }
+    ];
+
+    const profesoresData = [
+        { nombre: "Prof. Ana Martínez", materias: "Matemática", años: ["1°A", "1°B", "2°A"] },
+        { nombre: "Prof. Javier Costa", materias: "Lengua y Literatura", años: ["2°B", "3°A", "3°B"] },
+        { nombre: "Prof. Lucía Ramírez", materias: "Historia, Geografía", años: ["1°A", "2°A", "3°B"] },
+        { nombre: "Prof. Daniel Herrera", materias: "Ciencias Naturales", años: ["1°B", "2°B"] }
+    ];
+
+    const alumnosData = [
+        { nombre: "Lucas Gutiérrez", materiasAdeudadas: ["Matemática", "Física"], extra: "Participa en taller de robótica" },
+        { nombre: "Camila Fernández", materiasAdeudadas: ["Lengua"], extra: "Promedio general 8.5" },
+        { nombre: "Joaquín Méndez", materiasAdeudadas: ["Historia"], extra: "Necesita apoyo en comprensión lectora" },
+        { nombre: "Sofía Paredes", materiasAdeudadas: [], extra: "Alumna destacada en arte" }
+    ];
+
+    const infoExtra = {
+        horarios: "Turno mañana: 8:00 a 12:30 · Turno tarde: 13:30 a 18:00",
+        calendario: "Exámenes finales: Diciembre · Mesas de febrero: 10/02 al 15/02",
+        reuniones: "Reunión de padres: 5 de abril, 20 de junio, 10 de octubre",
+        directivos: "Directora: Silvia Ramos · Vice: Mariano Suárez"
+    };
+
+    // ---------- Funciones de renderizado en el panel ----------
+    const panelTitle = document.getElementById('panelTitle');
+    const panelContent = document.getElementById('panelContent');
+    const closeBtn = document.getElementById('closePanelBtn');
+
+    function renderWhatsApp() {
+        panelTitle.innerText = '📱 WhatsApp Institucional';
+        let html = `
+            <div style="margin-bottom: 1.5rem;">
+                <h4><i class="fas fa-user-friends"></i> Representantes y Tutores</h4>
+                <div class="contact-list">
+        `;
+        contactosRepresentantes.forEach(c => {
+            html += `
+                <div class="contact-item">
+                    <div class="contact-name">${c.nombre}</div>
+                    <div class="contact-role">${c.rol} (${c.alumno})</div>
+                    <div class="contact-phone"><i class="fab fa-whatsapp"></i> ${c.telefono}</div>
+                </div>
+            `;
+        });
+        html += `</div><hr style="margin:1.2rem 0;"><h4><i class="fas fa-users"></i> Grupos de WhatsApp por Año</h4><div class="group-list">`;
+        gruposWhatsApp.forEach(g => {
+            html += `
+                <div class="group-item">
+                    <span><strong>📌 ${g.año}</strong>: ${g.descripcion}</span>
+                    <a href="${g.enlace}" target="_blank" style="background:#25D366; color:white; padding:0.2rem 1rem; border-radius:40px; text-decoration:none; margin-left:auto;">Unirse <i class="fab fa-whatsapp"></i></a>
+                </div>
+            `;
+        });
+        html += `</div><p class="mt-3" style="margin-top:1rem; font-size:0.8rem;">⚠️ Los enlaces son simulados para preservar privacidad. En producción se integrarían contactos reales.</p>`;
+        panelContent.innerHTML = html;
+    }
+
+    function renderExcel() {
+        panelTitle.innerText = '📊 Gestión Excel · Datos Académicos';
+        const submenuHtml = `
+            <div class="sub-option-buttons">
+                <button class="sub-option-btn" data-excel="profesores">👩‍🏫 Información de Profesores</button>
+                <button class="sub-option-btn" data-excel="alumnos">📚 Información de Alumnos</button>
+                <button class="sub-option-btn" data-excel="extra">📋 Info Extra (Horarios/Calendario)</button>
+            </div>
+            <div id="excelSubContent"></div>
+        `;
+        panelContent.innerHTML = submenuHtml;
+        const excelSubDiv = document.getElementById('excelSubContent');
+        function loadExcelSub(option) {
+            if(option === 'profesores') {
+                let html = `<div class="contact-list">`;
+                profesoresData.forEach(p => {
+                    html += `<div class="contact-item"><div><strong>${p.nombre}</strong><br>📖 ${p.materias}</div><div>🎓 Imparte en: ${p.años.join(', ')}</div></div>`;
+                });
+                html += `</div>`;
+                excelSubDiv.innerHTML = html;
+            } else if(option === 'alumnos') {
+                let html = `<div class="contact-list">`;
+                alumnosData.forEach(a => {
+                    html += `<div class="contact-item"><div><strong>${a.nombre}</strong><br>📘 Adeuda: ${a.materiasAdeudadas.length ? a.materiasAdeudadas.join(', ') : 'Ninguna'}</div><div>📌 ${a.extra}</div></div>`;
+                });
+                html += `</div>`;
+                excelSubDiv.innerHTML = html;
+            } else if(option === 'extra') {
+                let html = `<div style="background:#eef2ff; padding:1rem; border-radius:1rem;">
+                    <p><i class="fas fa-clock"></i> <strong>Horarios:</strong> ${infoExtra.horarios}</p>
+                    <p><i class="fas fa-calendar-alt"></i> <strong>Calendario:</strong> ${infoExtra.calendario}</p>
+                    <p><i class="fas fa-chalkboard-user"></i> <strong>Reuniones:</strong> ${infoExtra.reuniones}</p>
+                    <p><i class="fas fa-user-tie"></i> <strong>Directivos:</strong> ${infoExtra.directivos}</p>
+                </div>`;
+                excelSubDiv.innerHTML = html;
+            }
+        }
+        loadExcelSub('profesores');
+        document.querySelectorAll('[data-excel]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('[data-excel]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                loadExcelSub(btn.getAttribute('data-excel'));
+            });
+        });
+        document.querySelector('[data-excel="profesores"]')?.classList.add('active');
+    }
+
+    function renderImagen() {
+        panelTitle.innerText = '🎨 Generador IA de Flyers · 24 de Marzo';
+        const flyerHtml = `
+            <div class="flyer-card" id="flyerContainer">
+                <h2 style="color:#a81c1c;">🕊️ 24 de Marzo</h2>
+                <p><strong>Día de la Memoria por la Verdad y la Justicia</strong></p>
+                <p style="margin:0.5rem 0;">"Nunca más al olvido, construir memoria es construir futuro."</p>
+                <div id="flyerCanvasContainer" style="display:flex; justify-content:center; margin:1rem 0;">
+                    <canvas id="flyerCanvas" width="400" height="400" style="max-width:100%; border-radius:24px; box-shadow:0 8px 20px rgba(0,0,0,0.2); background:#fff2e0;"></canvas>
+                </div>
+                <button id="downloadFlyerBtn" class="download-btn"><i class="fas fa-download"></i> Descargar Flyer (PNG)</button>
+                <p style="margin-top:1rem; font-size:0.75rem;">✨ Flyer generado por IA institucional. Puedes compartirlo en redes o grupos.</p>
+            </div>
+        `;
+        panelContent.innerHTML = flyerHtml;
+
+        const canvas = document.getElementById('flyerCanvas');
+        const ctx = canvas.getContext('2d');
+        function drawFlyer() {
+            ctx.clearRect(0, 0, 400, 400);
+            const grad = ctx.createLinearGradient(0, 0, 400, 400);
+            grad.addColorStop(0, '#fde8cd');
+            grad.addColorStop(1, '#ffd9b5');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 400, 400);
+            ctx.fillStyle = '#a12a2a';
+            ctx.font = 'bold 36px "Plus Jakarta Sans"';
+            ctx.fillText("🕊️", 160, 80);
+            ctx.font = 'bold 24px "Plus Jakarta Sans"';
+            ctx.fillStyle = '#5a2e2e';
+            ctx.fillText("24 de MARZO", 100, 150);
+            ctx.font = 'bold 18px sans-serif';
+            ctx.fillStyle = '#2d3748';
+            ctx.fillText("Memoria, Verdad y Justicia", 80, 210);
+            ctx.font = '14px monospace';
+            ctx.fillStyle = '#4a5568';
+            ctx.fillText("Instituciones educativas por la democracia", 70, 270);
+            ctx.font = 'italic 12px sans-serif';
+            ctx.fillStyle = '#6b2e2e';
+            ctx.fillText("Nunca más - 40 años de democracia", 110, 340);
+            ctx.strokeStyle = '#b97f44';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(10, 10, 380, 380);
+        }
+        drawFlyer();
+        document.getElementById('downloadFlyerBtn').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'flyer_24marzo.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    }
+
+    function renderGuia() {
+        panelTitle.innerText = '📘 Guía de Funciones · Asistente IA';
+        const guideHtml = `
+            <div class="guide-step">
+                <h4><i class="fab fa-whatsapp"></i> WhatsApp</h4>
+                <p>Accede a contactos de representantes/tutores de cada alumno y a los enlaces de grupos por año. Ideal para comunicación directa y ágil con las familias.</p>
+            </div>
+            <div class="guide-step">
+                <h4><i class="fas fa-file-excel"></i> Excel</h4>
+                <p>Visualización estructurada de datos académicos: profesores con materias y años asignados, alumnos con materias adeudadas e información extra (horarios, reuniones). Centraliza la gestión.</p>
+            </div>
+            <div class="guide-step">
+                <h4><i class="fas fa-palette"></i> Imagen</h4>
+                <p>Genera automáticamente flyers para fechas importantes como el 24 de marzo (Memoria). Puedes descargarlos para difundir en redes sociales o imprimir. Próximamente más templates.</p>
+            </div>
+            <div class="guide-step">
+                <h4><i class="fas fa-compass"></i> Guía</h4>
+                <p>Este mismo panel te explica el propósito de cada módulo. Además, al pasar el mouse sobre cada tarjeta (excepto Excel) se expande con una breve descripción. La IA facilita el acceso a la información crítica.</p>
+            </div>
+            <div class="guide-step">
+                <h4><i class="fas fa-crown"></i> Consejos para directores</h4>
+                <p>Utiliza los grupos de WhatsApp para difundir circulares, apóyate en la info de profesores para armar suplencias y monitorea el estado académico de alumnos desde el módulo Excel.</p>
+            </div>
+        `;
+        panelContent.innerHTML = guideHtml;
+    }
+
+    function setupCardActions() {
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const action = card.getAttribute('data-action');
+                if (action === 'whatsapp') renderWhatsApp();
+                else if (action === 'excel') renderExcel();
+                else if (action === 'imagen') renderImagen();
+                else if (action === 'guia') renderGuia();
+            });
+        });
+    }
+
+    closeBtn.addEventListener('click', () => {
+        panelTitle.innerText = 'Bienvenido, Director';
+        panelContent.innerHTML = `<p style="color:#4a627a;">✨ Selecciona una opción para visualizar información detallada. <br>Pasa el mouse sobre las tarjetas para conocer más.</p>`;
+    });
+
+    setupCardActions();
+</script>
 </body>
 </html>
