@@ -233,9 +233,9 @@ function renderWhatsApp() {
     // Mensajes predefinidos
     const mensajesPredefinidos = [
         { id: 'saludo', texto: 'Buenos días, le escribo desde la institución...' },
-        { id: 'reunion', texto: 'Le informo que hay una reunión programada...' },
-        { id: 'recordatorio', texto: 'Le recuerdo que mañana vence el plazo para...' },
-        { id: 'consulta', texto: 'Quería consultar sobre...' },
+        { id: 'reunion', texto: 'Le informo que hay una reunión programada para el jueves' },
+        { id: 'recordatorio', texto: 'Le recuerdo que mañana vence el plazo para entregar el permiso de la excursion' },
+        { id: 'consulta', texto: 'Quería consultar que paso con el estudiante porque ayer falto' },
         { id: 'custom', value: 'custom', label: 'Escribir mensaje propio...' }
     ];
 
