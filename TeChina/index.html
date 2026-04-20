@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA | Acceso Directivos</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="login-container">
+    <div class="logo"><i class="fas fa-robot"></i> AURA</div>
+    <div class="sub">Administración Unificada Responsiva Avanzada</div>
+
+    <button id="boton1" class="btn-auth" onclick="toggleMenu('login')">Iniciar Sesión</button>
+    <div id="loginForm" class="dropdown hidden">
+        <div class="input-group">
+            <label>Correo (Gmail)</label>
+            <input type="email" id="loginEmail" placeholder="ejemplo@escuelasproa.edu.ar">
+        </div>
+        <div class="input-group">
+            <label>Contraseña</label>
+            <input type="password" id="loginPassword" placeholder="••••••••">
+        </div>
+        <button class="btn-auth" id="loginBtn">Iniciar Sesión</button>
+        <div id="loginMessage" class="message"></div>
+    </div>
+
+    <hr>
+
+    <button id="boton2" class="btn-auth btn-secondary" onclick="toggleMenu('register')">Registrarse</button>
+    <div id="registerForm" class="dropdown hidden">
+        <div class="input-group">
+            <label>Nuevo correo (Gmail)</label>
+            <input type="email" id="regEmail" placeholder="nuevo@institucion.edu">
+        </div>
+        <div class="input-group">
+            <label>Contraseña</label>
+            <input type="password" id="regPassword" placeholder="Mínimo 4 caracteres">
+        </div>
+        <button class="btn-auth btn-secondary" id="registerBtn">Registrarse</button>
+        <div id="regMessage" class="message"></div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
