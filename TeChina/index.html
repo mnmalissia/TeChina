@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Directivos</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+<div class="login-container">
+    <div class="logo"><i class="fas fa-robot"></i> AURA</div>
+    
+
+    <!-- LOGIN -->
+    <div id="loginForm">
+        <div class="input-group">
+            <label>Usuario</label>
+            <input type="text" id="loginUser" placeholder="Director">
+        </div>
+
+        <div class="input-group">
+            <label>Contraseña</label>
+            <input type="password" id="loginPassword" placeholder="••••••••">
+        </div>
+
+        <button class="btn-auth" id="loginBtn">Iniciar Sesión</button>
+
+        <p style="margin-top:10px; cursor:pointer; color:#3498db;" onclick="mostrarRecuperacion()">
+            ¿Olvidaste tu contraseña?
+        </p>    
+
+        <div id="loginMessage" class="message"></div>
+    </div>
+
+    <!-- RECUPERACIÓN -->
+    <div id="recoveryForm" style="display:none;">
+        <h3>Recuperar contraseña</h3>
+
+        <div class="input-group">
+            <label>Año en que se fundó la institución</label>
+            <input type="text" id="preg1" placeholder="Ej: 2019">
+        </div>
+
+        <div class="input-group">
+            <label>Nombre de la escuela</label>
+            <input type="text" id="preg2" placeholder="Ej: Nombre de la institución">
+        </div>
+
+        <button class="btn-auth btn-secondary" onclick="verificarRespuestas()">
+            Verificar
+        </button>
+
+        <div id="recoveryMessage" class="message"></div>
+
+        <div id="nuevaPassContainer" style="display:none;">
+            <div class="input-group">
+                <label>Nueva contraseña</label>
+                <input type="password" id="newPassword">
+            </div>
+
+            <button class="btn-auth" onclick="cambiarPassword()">
+                Guardar nueva contraseña
+            </button>
+        </div>
+
+        <p style="margin-top:10px; cursor:pointer; color:#3498db;" onclick="volverLogin()">
+            ← Volver al login
+        </p>
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
