@@ -24,14 +24,29 @@
             text-align: center;
         }
 
-        .logo {
-            font-size: 2.2rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 0.5rem;
+        /* ============================================================
+           BARRA DE MARCA (logo + nombre)
+           Editá estas dos variables para cambiar tamaño y separación.
+           --brand-height : alto en px de AMBAS imágenes (una al lado de
+                            la otra, siempre a la misma altura).
+           --brand-gap    : espacio entre las dos imágenes.
+           ============================================================ */
+        .brand-bar {
+            --brand-height: 80px;
+            --brand-gap: 0.6rem;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--brand-gap);
+            margin-bottom: 0.4rem;
+        }
+
+        .brand-bar img {
+            height: var(--brand-height);
+            width: auto;
+            display: block;
+            object-fit: contain;
         }
 
         .sub {
@@ -52,19 +67,53 @@
             color: #1e2f3e;
         }
 
-        .input-group input {
+        .input-group input,
+        .input-group select {
             width: 100%;
             padding: 0.8rem 1rem;
             border: 1px solid #dce4ec;
             border-radius: 2rem;
             font-family: inherit;
+            font-size: 0.95rem;
+            background: white;
+            color: #1e2f3e;
             outline: none;
             transition: 0.2s;
         }
 
-        .input-group input:focus {
+        .input-group input:focus,
+        .input-group select:focus {
             border-color: #2a5298;
             box-shadow: 0 0 0 2px rgba(42,82,152,0.2);
+        }
+
+        .form-title {
+            color: #1e3c72;
+            margin-bottom: 1.2rem;
+            font-size: 1.15rem;
+        }
+
+        .auth-switch {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: #5a6e8a;
+        }
+
+        .auth-switch a {
+            color: #2a5298;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        .btn-auth:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .btn-auth {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>AURA | Administración Unificada Responsiva Avanzada</title>
+    <title>ATLAS | Administración Unificada Responsiva Avanzada</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <link rel="stylesheet" href="style1.css">
@@ -12,8 +12,12 @@
 <body>
 <div class="dashboard">
     <div class="header">
-        <h1><i class="fas fa-robot"></i> AURA </h1>
-        <h2>Administración Unificada Responsiva Avanzada</h2>
+        
+        <div class="brand-bar">
+            <img class="brand-logo" src="logoN.png" alt="Logo ATLAS" width="41" height="44" draggable="false">
+            <img class="brand-name" src="TextoN.png" alt="ATLAS" width="130" height="44" draggable="false">
+        </div>
+
         <p>Plataforma inteligente para directivos y preceptores</p>
         
         <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
@@ -33,10 +37,10 @@
         </div>
 
         <!-- Excel card (no expande en hover) -->
-        <div class="card no-expand" data-action="excel">
+        <div class="card no-expand" data-action="BasedeDatos">
             <div class="card-inner">
-                <div class="card-icon"><i class="fas fa-file-excel" style="color:#1F724C;"></i></div>
-                <div class="card-title">Excel</div>
+                <div class="card-icon"><i class="fa fa-folder" aria-hidden="true" style="color:#eecb2e;"></i></div>
+                <div class="card-title">Base de datos</div>
                 <div class="card-sub">Gestión académica y datos</div>
             </div>
             <div class="expand-content" style="display: none;"></div>
@@ -59,10 +63,10 @@
             <div class="card-inner">
                 <div class="card-icon"><i class="fas fa-compass" style="color:#3498db;"></i></div>
                 <div class="card-title">Guía</div>
-                <div class="card-sub">Manual de funciones IA</div>
+                <div class="card-sub">Manual de funciones.</div>
             </div>
             <div class="expand-content">
-                📘 Explicación detallada de cada módulo, cómo aprovechar la IA y optimizar la gestión escolar.
+                📘 Explicación detallada de cada módulo.
             </div>
         </div>
     </div>
@@ -70,7 +74,7 @@
     <!-- Panel dinámico donde se carga la información al hacer clic -->
     <div id="infoPanel" class="info-panel">
         <div class="panel-header">
-            <h3 id="panelTitle">Bienvenido, Director</h3>
+            <h3 id="panelTitle">Bienvenido</h3>
             <button class="close-panel" id="closePanelBtn">&times;</button>
         </div>
         <div id="panelContent" class="dynamic-content">
@@ -80,7 +84,6 @@
     <footer>
         <i class="fas fa-brain"></i> 
 
-<script src="script1.js"></script>
 <script src="render.js"></script>
 </body>
 </html>

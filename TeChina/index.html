@@ -3,45 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURA | Acceso Directivos</title>
+    <title>ATLAS | Acceso</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 <div class="login-container">
-    <div class="logo"><i class="fas fa-robot"></i> AURA</div>
-    <div class="sub">Administración Unificada Responsiva Avanzada</div>
+    <div class="brand-bar">
+        <img class="brand-logo" src="logoN.png" alt="Logo ATLAS" width="35" height="38" draggable="false">
+        <img class="brand-name" src="TextoN.png" alt="ATLAS" width="112" height="38" draggable="false">
+    </div>
+    <p class="sub">Plataforma de gestión para directivos</p>
 
-    <button id="boton1" class="btn-auth" onclick="toggleMenu('login')">Iniciar Sesión</button>
-    <div id="loginForm" class="dropdown hidden">
+    <!-- LOGIN -->
+    <form id="loginForm" novalidate>
         <div class="input-group">
-            <label>Correo (Gmail)</label>
-            <input type="email" id="loginEmail" placeholder="ejemplo@escuelasproa.edu.ar">
+            <label for="loginUser">Email</label>
+            <input type="email" id="loginUser" placeholder="director@escuela.edu" autocomplete="username" required>
         </div>
+
         <div class="input-group">
-            <label>Contraseña</label>
-            <input type="password" id="loginPassword" placeholder="••••••••">
+            <label for="loginPassword">Contraseña</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" required>
         </div>
-        <button class="btn-auth" id="loginBtn">Iniciar Sesión</button>
+
+        <button type="submit" class="btn-auth" id="loginBtn">Iniciar Sesión</button>
+
+        <p class="auth-switch">
+            ¿No tenés cuenta? <a href="#" id="goRegister">Registrate</a>
+        </p>
+
         <div id="loginMessage" class="message"></div>
-    </div>
+    </form>
 
-    <hr>
+    <!-- REGISTRO -->
+    <form id="registerForm" novalidate style="display:none;">
+        <h3 class="form-title">Crear cuenta</h3>
 
-    <button id="boton2" class="btn-auth btn-secondary" onclick="toggleMenu('register')">Registrarse</button>
-    <div id="registerForm" class="dropdown hidden">
         <div class="input-group">
-            <label>Nuevo correo (Gmail)</label>
-            <input type="email" id="regEmail" placeholder="nuevo@institucion.edu">
+            <label for="regNombre">Nombre y apellido</label>
+            <input type="text" id="regNombre" placeholder="Ej: Ana Gómez" autocomplete="name" required>
         </div>
+
         <div class="input-group">
-            <label>Contraseña</label>
-            <input type="password" id="regPassword" placeholder="Mínimo 4 caracteres">
+            <label for="regEmail">Email</label>
+            <input type="email" id="regEmail" placeholder="usuario@escuela.edu" autocomplete="username" required>
         </div>
-        <button class="btn-auth btn-secondary" id="registerBtn">Registrarse</button>
-        <div id="regMessage" class="message"></div>
-    </div>
+
+        <div class="input-group">
+            <label for="regPassword">Contraseña</label>
+            <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required>
+        </div>
+
+        <div class="input-group">
+            <label for="regPassword2">Repetir contraseña</label>
+            <input type="password" id="regPassword2" placeholder="••••••••" autocomplete="new-password" required>
+        </div>
+
+        <div class="input-group">
+            <label for="regRol">Rol</label>
+            <select id="regRol" required>
+                <option value="">Seleccioná un rol</option>
+                <option value="Director">Director</option>
+                <option value="Preceptor">Preceptor</option>
+                <option value="Profesor">Profesor</option>
+                <option value="Alumno">Alumno</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn-auth" id="registerBtn">Registrarme</button>
+
+        <p class="auth-switch">
+            ¿Ya tenés cuenta? <a href="#" id="goLogin">Iniciá sesión</a>
+        </p>
+
+        <div id="registerMessage" class="message"></div>
+    </form>
 </div>
 
-<script src="script.js"></script>
+<script src="login.js"></script>
 </body>
 </html>

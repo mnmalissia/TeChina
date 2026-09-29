@@ -397,3 +397,207 @@
 .btn-view:hover {
     background: #1d4ed8;
 }
+
+/* ==========================================
+   BASE DE DATOS - MÓDULOS
+   ========================================== */
+
+.db-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Fila de botones de módulos */
+.db-modules {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.db-module-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: #1e3a5f;
+    color: #fff;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.db-module-btn:hover {
+    background: #2563a8;
+    transform: translateY(-2px);
+}
+
+.db-module-btn.active {
+    background: #1abc9c;
+    border-color: #16a085;
+    color: #fff;
+}
+
+/* Área principal */
+.db-main { margin-top: 8px; }
+.oculto { display: none !important; }
+
+/* Toolbar */
+.db-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.db-toolbar h4 {
+    font-size: 16px;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.db-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.db-actions input {
+    padding: 7px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 13px;
+    width: 180px;
+}
+
+.db-btn-add {
+    padding: 7px 14px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+.db-btn-add:hover { background: #1e8449; }
+
+/* Formulario */
+.db-form {
+    background: #f0f4f8;
+    border: 1px solid #d0dce8;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.db-form-campos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.db-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #4a627a;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.db-field input {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #b0c4d8;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.db-form-btns {
+    display: flex;
+    gap: 8px;
+}
+
+.db-btn-save {
+    padding: 8px 16px;
+    background: #2980b9;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.db-btn-save:hover { background: #1f618d; }
+
+.db-btn-cancel {
+    padding: 8px 16px;
+    background: #95a5a6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* Tabla */
+.db-tabla-wrap { overflow-x: auto; }
+
+.db-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.db-tabla th {
+    background: #2c3e50;
+    color: white;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.db-tabla td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #e0e8f0;
+    color: #2c3e50;
+}
+
+.db-tabla tr:hover td { background: #eaf4fb; }
+
+.db-acciones { display: flex; gap: 6px; }
+
+.db-btn-edit {
+    padding: 5px 9px;
+    background: #f39c12;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.db-btn-edit:hover { background: #d68910; }
+
+.db-btn-del {
+    padding: 5px 9px;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.db-btn-del:hover { background: #c0392b; }
+
+.db-loading, .db-error, .db-empty {
+    text-align: center;
+    padding: 20px;
+    color: #7f8c8d;
+    font-style: italic;
+}
+.db-error { color: #e74c3c; }

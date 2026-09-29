@@ -11,7 +11,11 @@
             padding: 2rem;
             color: #1a2c3e;
         }
-
+.logoFC {
+            width: 120px;
+            height: auto;
+            margin-bottom: 1rem;
+        }
         .dashboard {
             max-width: 1400px;
             margin: 0 auto;
@@ -19,7 +23,7 @@
 
         .header {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
             position: relative;
         }
         .header h1 {
@@ -31,10 +35,30 @@
             color: transparent;
             letter-spacing: -0.5px;
         }
+        /* Barra de marca del dashboard. Mismas variables que en style.css.
+           --brand-height ≈ 44px, apenas más que el alto del .logout-btn (~35px). */
+        .brand-bar {
+            --brand-height: 95px;
+            --brand-gap: 0.7rem;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--brand-gap);
+            margin-bottom: 0.2rem;
+        }
+
+        .brand-bar img {
+            height: var(--brand-height);
+            width: auto;
+            display: block;
+            object-fit: contain;
+        }
+
         .header p {
             color: #2c3e66;
             font-weight: 500;
-            margin-top: 0.5rem;
+            margin-top: 0.2rem;
         }
         .badge-ai {
             background: #2a5298;
@@ -201,35 +225,6 @@
         .sub-option-btn.active {
             background: #2a5298;
             color: white;
-        }
-        .flyer-card {
-            background: linear-gradient(145deg, #fff5e6, #ffe6d5);
-            border-radius: 1.5rem;
-            padding: 1.5rem;
-            text-align: center;
-            border: 1px solid #ffcd94;
-        }
-        .flyer-img {
-            max-width: 100%;
-            border-radius: 1rem;
-            margin-top: 1rem;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-        button.download-btn {
-            background: #1e3c72;
-            color: white;
-            border: none;
-            padding: 0.6rem 1.4rem;
-            border-radius: 3rem;
-            margin-top: 1rem;
-            cursor: pointer;
-        }
-
-        .guide-step {
-            margin-bottom: 1rem;
-            padding: 0.8rem;
-            background: #f8fafc;
-            border-radius: 1rem;
         }
 
         footer {
