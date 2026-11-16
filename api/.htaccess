@@ -1,0 +1,3 @@
+<Files "instalar_permisos.php">
+    Require all denied
+</Files>

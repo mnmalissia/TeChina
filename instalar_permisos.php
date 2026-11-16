@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /* ============================================================
    Crea y siembra el esquema de permisos por rol.
 
@@ -9,16 +9,17 @@
    (las tablas usan CREATE TABLE IF NOT EXISTS y el sembrado
    borra y reinserta los permisos de cada módulo).
 
-   Uso:  php api/instalar_permisos.php
+   Uso (CLI, desde la raíz de ATLAS): php instalar_permisos.php
    ============================================================ */
 
-mysqli_report(MYSQLI_REPORT_OFF);
-$conn = new mysqli('localhost', 'rootX', 'rootX', 'proadb');
-if ($conn->connect_error) {
-    echo "ERROR de conexión: " . $conn->connect_error . PHP_EOL;
-    exit(1);
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    header('Content-Type: text/plain; charset=utf-8');
+    exit('Forbidden');
 }
-$conn->set_charset('utf8mb4');
+
+mysqli_report(MYSQLI_REPORT_OFF);
+require_once __DIR__ . '/api/conexion.php';
 
 /* ------------------------------------------------------------
    1. ESQUEMA
@@ -31,9 +32,6 @@ $ddl = [
         UNIQUE KEY `uq_roles_nombre` (`NombreRol`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
-    // Un módulo es cualquier cosa protegible: una tabla del CRUD o una
-    // tarjeta del dashboard. ClaveModulo VARCHAR a propósito: un módulo
-    // desconocido es un string que no matchea nada, no un id roto.
     "CREATE TABLE IF NOT EXISTS `modulos` (
         ClaveModulo VARCHAR(45) NOT NULL,
         Etiqueta    VARCHAR(80) NOT NULL,
@@ -81,7 +79,6 @@ echo "Roles: " . implode(', ', $ROLES) . "\n";
    3. MÓDULOS
    ------------------------------------------------------------ */
 $MODULOS = [
-    // clave            etiqueta              esTabla
     ['usuarios',                   'Usuarios',                   1],
     ['estudiantes',                'Estudiantes',                1],
     ['cursos',                     'Cursos',                     1],
@@ -94,7 +91,6 @@ $MODULOS = [
     ['inventarioelementosgenerales','Inventario General',         1],
     ['inventariolaboratorio',      'Inventario Laboratorio',      1],
     ['inventarioventas',           'Inventario Ventas',          1],
-    // tarjetas del dashboard
     ['card_whatsapp',              'WhatsApp',                   0],
     ['card_basededatos',           'Base de Datos',              0],
     ['card_imagen',                'Imágenes',                   0],
@@ -114,10 +110,6 @@ echo "Modulos: " . count($MODULOS) . "\n";
 
 /* ------------------------------------------------------------
    4. MATRIZ DE PERMISOS POR DEFECTO
-   ------------------------------------------------------------
-   1 = permitido, 0 = no. Ausencia de fila = sin permiso sobre
-   nada de ese módulo (fail-closed), así que solo se siembran
-   los módulos donde el rol tiene al menos un permiso.
    ------------------------------------------------------------ */
 $M = [
 
@@ -140,8 +132,6 @@ $M = [
         'card_guia'                   => [1, 0, 0, 0],
     ],
 
-    // Lectura y edición académica, sin tocar usuarios ni inventarios,
-    // y nunca eliminando (los borrados los hace el Director).
     'Preceptor' => [
         'estudiantes'         => [1, 1, 1, 0],
         'cursos'              => [1, 1, 1, 0],
@@ -156,16 +146,12 @@ $M = [
         'card_guia'           => [1, 0, 0, 0],
     ],
 
-    // Solo puede ver y editar la tabla de horarios (acceso completo a la
-    // misma, pero sin tocar el resto de las tablas). Conserva las tarjetas
-    // de navegación para poder abrir la Base de Datos y la Guía.
     'Profesor' => [
         'horarios'         => [1, 0, 1, 0],
         'card_basededatos' => [1, 0, 0, 0],
         'card_guia'        => [1, 0, 0, 0],
     ],
 
-    // Solo puede ver la tabla de horarios (ni alta, ni edición, ni borrado).
     'Alumno' => [
         'horarios'         => [1, 0, 0, 0],
         'card_basededatos' => [1, 0, 0, 0],
@@ -173,7 +159,6 @@ $M = [
     ],
 ];
 
-// Re-sembrar: borra lo anterior de estos roles y reinserta la matriz
 $conn->query('DELETE FROM roles_permisos');
 echo "Matriz anterior borrada.\n";
 
@@ -192,9 +177,6 @@ foreach ($M as $rol => $mods) {
 $stmt->close();
 echo "Permisos insertados: $n\n";
 
-/* ------------------------------------------------------------
-   5. RESUMEN
-   ------------------------------------------------------------ */
 $r = $conn->query("
     SELECT ro.NombreRol, m.Etiqueta, p.PuedeListar, p.PuedeAgregar, p.PuedeEditar, p.PuedeEliminar
     FROM roles_permisos p
@@ -208,8 +190,6 @@ while ($f = $r->fetch_assoc()) {
         $actual = $f['NombreRol'];
         echo "\n  $actual\n";
     }
-    // Concatenar, no asignar por offset: '·' ocupa 2 bytes en UTF-8 y los
-    // offsets de string son por byte, así que pisaría media letra.
     $marcas = ($f['PuedeListar']   ? 'L' : '-')
             . ($f['PuedeAgregar']  ? 'A' : '-')
             . ($f['PuedeEditar']   ? 'E' : '-')

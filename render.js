@@ -54,156 +54,331 @@ closeBtn?.addEventListener('click', () => {
 });
 
 /* ==========================================
-   URL DE GOOGLE SHEETS PARA IMÁGENES
+   WHATSAPP - CONTACTOS DESDE LA BD
    ========================================== */
-const DRIVE_IMAGES_SHEET = '';
+let contactosRepresentantes = [];
 
-/* ==========================================
-   DATOS DE EJEMPLO - WHATSAPP
-   ========================================== */
-const contactosRepresentantes = [
-];
+async function cargarContactosWhatsApp() {
+    try {
+        const [resTutores, resEstudiantes] = await Promise.all([
+            fetch(`${API_BASE}/crud.php?tabla=tutores&accion=listar`),
+            fetch(`${API_BASE}/crud.php?tabla=estudiantes&accion=listar`)
+        ]);
 
-/* ==========================================
-   DATOS DE EJEMPLO (cuando no funcione el sheet)
-   ========================================== */
-const EJEMPLO_IMAGENES = [
-    { Nombre: 'Flyer 24 Marzo', Categoría: 'Flyers', URL: 'https://via.placeholder.com/400x300?text=Flyer+24+Marzo', Descripción: 'Flyer conmemorativo' },
-    { Nombre: 'Logo Escuela', Categoría: 'Institucional', URL: 'https://via.placeholder.com/400x300?text=Logo+Escuela', Descripción: 'Logo oficial' },
-    { Nombre: 'Circular 001', Categoría: 'Circulares', URL: 'https://via.placeholder.com/400x300?text=Circular+001', Descripción: 'Comunicado inicio de curso' },
-    { Nombre: 'Foto bandera', Categoría: 'Eventos', URL: 'https://via.placeholder.com/400x300?text=Bandera', Descripción: 'Izamiento bandera' }
-];
+        if (resTutores.status === 401 || resEstudiantes.status === 401) {
+            sessionStorage.removeItem('aura_session');
+            window.location.href = 'index.html';
+            return [];
+        }
 
-/* ==========================================
-   RENDER IMAGEN
-   ========================================== */
-function renderImagen() {
-    panelTitle.innerText = '🖼️ Buscador de Imágenes';
+        const tutores = await resTutores.json();
+        const estudiantes = await resEstudiantes.json();
+        if (!Array.isArray(tutores)) return [];
 
-    panelContent.innerHTML = `
-        <div class="drive-search">
-            <h4><i class="fas fa-search"></i> Buscar Imágenes</h4>
-            <div class="search-box">
-                <input type="text" id="imageSearchInput" class="search-input"
-                       placeholder="Buscar por nombre o categoría...">
-                <button id="searchBtn" class="search-btn">
-                    <i class="fas fa-search"></i> Buscar
-                </button>
-            </div>
-            <div id="filterTags" class="filter-tags">
-                <button class="filter-tag active" data-category="todas">Todas</button>
-            </div>
-            <div id="imageResults" class="image-results">
-                <p class="loading-text">Cargando imágenes...</p>
-            </div>
-        </div>
-    `;
+        const alumnosPorTutor = {};
+        if (Array.isArray(estudiantes)) {
+            estudiantes.forEach(e => {
+                const tutor = String(e.Tutor || '').trim();
+                const alumno = String(e.Nombre_Completo || e.nombre || '').trim();
+                if (!tutor || !alumno) return;
+                if (!alumnosPorTutor[tutor]) alumnosPorTutor[tutor] = [];
+                alumnosPorTutor[tutor].push(alumno);
+            });
+        }
 
-    loadImagesFromSheet();
-    document.getElementById('searchBtn').addEventListener('click', searchImages);
-    document.getElementById('imageSearchInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') searchImages();
-    });
-}
-
-let allImages = [];
-
-function loadImagesFromSheet() {
-    fetch(DRIVE_IMAGES_SHEET)
-        .then(res => {
-            if (!res.ok) throw new Error('Sheet no disponible');
-            return res.json();
-        })
-        .then(data => {
-            allImages = (!data || data.length === 0) ? EJEMPLO_IMAGENES : data;
-            renderFilterTags(allImages);
-            renderImageGrid(allImages);
-        })
-        .catch(() => {
-            allImages = EJEMPLO_IMAGENES;
-            renderFilterTags(allImages);
-            renderImageGrid(allImages);
-        });
-}
-
-function renderFilterTags(images) {
-    const filterTags = document.getElementById('filterTags');
-    if (!filterTags) return;
-    const catSet = new Set();
-    images.forEach(img => {
-        const cat = img.Categoría || img.Categoria;
-        if (cat) catSet.add(cat);
-    });
-    const categories = ['todas', ...catSet];
-    let html = '';
-    categories.forEach((cat, i) => {
-        html += `<button class="filter-tag ${i === 0 ? 'active' : ''}" data-category="${cat}">${cat}</button>`;
-    });
-    filterTags.innerHTML = html;
-    document.querySelectorAll('.filter-tag').forEach(btn => {
-        btn.addEventListener('click', function () {
-            document.querySelectorAll('.filter-tag').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            filterByCategory(this.dataset.category);
-        });
-    });
-}
-
-function filterByCategory(category) {
-    if (category === 'todas') {
-        renderImageGrid(allImages);
-    } else {
-        renderImageGrid(allImages.filter(img =>
-            (img.Categoría || '').toLowerCase() === category.toLowerCase()
-        ));
+        return tutores.map(t => {
+            const nombre = String(t.Nombre_Completo || t.NombreTutor || t.nombre || t.Nombre || 'Sin nombre').trim();
+            const alumnos = alumnosPorTutor[nombre] || [];
+            return {
+                telefono: String(t.NumeroDeContacto ?? t.telefono ?? '').trim(),
+                nombre,
+                rol: 'Tutor',
+                alumno: alumnos.join(', ')
+            };
+        }).filter(c => c.telefono);
+    } catch (e) {
+        console.error('No se pudieron cargar contactos de WhatsApp:', e);
+        return [];
     }
 }
 
-function searchImages() {
-    const input = document.getElementById('imageSearchInput');
-    if (!input) return;
-    const query = (input.value || '').toLowerCase().trim();
-    if (!query) { renderImageGrid(allImages); return; }
-    renderImageGrid(allImages.filter(img => {
-        return (img.Nombre || '').toLowerCase().includes(query) ||
-               (img.Categoría || '').toLowerCase().includes(query) ||
-               (img.Descripción || img.Descripcion || '').toLowerCase().includes(query);
+/* =========================================================
+   GALERÍA DE IMÁGENES - Cloudinary + MySQL
+   - Subir directo a Cloudinary desde el navegador (unsigned preset)
+   - Metadatos (secure_url, public_id) en tabla MySQL `imagenes`
+   - Eliminar: solo Director borra el registro; el archivo en Cloudinary
+     queda hasta que se borre desde el panel de Cloudinary o por API firmada.
+   ========================================================= */
+const CLOUD_NAME = 'meknqa51';
+const UPLOAD_PRESET = 'AtlasProa_img';
+const IMG_MAX_BYTES = 10 * 1024 * 1024; // 10 MB por imagen
+const IMG_TIPOS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+let allImages = [];
+let categoriaActiva = 'todas';
+let imgEscapeRegistrado = false;
+
+function escapeHTML(value = '') {
+    return String(value).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+}
+
+function imgRol() {
+    return String(window.ROL_USUARIO || '')
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .trim();
+}
+function imgPuedeSubir() {
+    return ['director', 'preceptor', 'profesor', 'profesores', 'profesora'].includes(imgRol());
+}
+function imgPuedeEliminar() { return imgRol() === 'director'; }
+
+/* ---------- Render principal ---------- */
+function renderImagen() {
+    panelTitle.innerText = '🖼️ Imágenes institucionales';
+    panelContent.innerHTML = `
+      <div class="drive-search">
+        <h4><i class="fas fa-images"></i> Galería de imágenes</h4>
+        ${imgPuedeSubir() ? `
+          <form id="imageUploadForm" class="image-upload-form">
+            <h5>Agregar imagen</h5>
+            <label>Imagen <input type="file" name="imagen" accept="image/jpeg,image/png,image/webp,image/gif" required></label>
+            <label>Nombre <input type="text" name="nombre" maxlength="120" required placeholder="Nombre de la imagen"></label>
+            <label>Categoría <input type="text" name="categoria" maxlength="80" placeholder="Ej. Institucional"></label>
+            <label>Descripción <input type="text" name="descripcion" maxlength="250" placeholder="Descripción opcional"></label>
+            <button class="search-btn" type="submit"><i class="fas fa-upload"></i> Subir imagen</button>
+            <p id="imageUploadStatus" role="status"></p>
+          </form>` : ''}
+        <div class="search-box">
+          <input type="text" id="imageSearchInput" class="search-input" placeholder="Buscar por nombre o categoría...">
+          <button id="searchBtn" class="search-btn"><i class="fas fa-search"></i> Buscar</button>
+        </div>
+        <div id="filterTags" class="filter-tags"><button class="filter-tag active" data-category="todas">Todas</button></div>
+        <div id="imageResults" class="image-results"><p class="loading-text">Cargando imágenes...</p></div>
+      </div>
+      <div id="imageModal" class="image-modal" hidden role="dialog" aria-modal="true" aria-label="Vista ampliada de imagen">
+        <button type="button" class="image-modal-close" id="imageModalClose" aria-label="Cerrar">&times;</button>
+        <img id="imageModalImg" alt="">
+        <div class="image-modal-info"><h3 id="imageModalTitle"></h3><p id="imageModalDesc"></p>
+          <div class="image-modal-actions">
+            <a id="imageDownloadBtn" class="search-btn" download><i class="fas fa-download"></i> Descargar</a>
+            <button id="imageDeleteBtn" class="image-delete-btn" type="button" hidden><i class="fas fa-trash"></i> Eliminar imagen</button>
+          </div>
+        </div>
+      </div>`;
+
+    categoriaActiva = 'todas';
+    document.getElementById('searchBtn').addEventListener('click', searchImages);
+    document.getElementById('imageSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') searchImages(); });
+    document.getElementById('imageModalClose').addEventListener('click', cerrarImagenModal);
+    document.getElementById('imageModal').addEventListener('click', e => { if (e.target.id === 'imageModal') cerrarImagenModal(); });
+    if (!imgEscapeRegistrado) { document.addEventListener('keydown', cerrarModalConEscape); imgEscapeRegistrado = true; }
+    if (imgPuedeSubir()) document.getElementById('imageUploadForm').addEventListener('submit', subirImagen);
+    cargarImagenes();
+}
+
+/* ---------- Carga ---------- */
+async function cargarImagenes() {
+    const container = document.getElementById('imageResults');
+    try {
+        const res = await fetch(`${API_BASE}/listar_imagenes.php`);
+        if (res.status === 401) {
+            sessionStorage.removeItem('aura_session');
+            window.location.href = 'index.html';
+            return;
+        }
+        const data = await res.json();
+        if (!data.success) throw new Error(data.mensaje || 'No se pudieron cargar las imágenes.');
+        allImages = data.imagenes
+            .sort((a, b) => (b.fecha_subida || 0) - (a.fecha_subida || 0))
+            .map(r => ({
+                id: r.id,
+                nombre: r.nombre,
+                categoria: r.categoria || '',
+                descripcion: r.descripcion || '',
+                tipo: r.tipo,
+                url: r.secure_url,
+                public_id: r.public_id,
+                peso: r.peso,
+                fecha: r.fecha_subida
+            }));
+    } catch (error) {
+        allImages = [];
+        if (container) container.innerHTML = `<p class="load-error">${escapeHTML(error.message || 'No se pudieron cargar las imágenes.')}</p>`;
+        renderFilterTags([]);
+        return;
+    }
+    renderFilterTags(allImages);
+    searchImages();
+}
+
+/* ---------- Filtros y búsqueda ---------- */
+function renderFilterTags(images) {
+    const box = document.getElementById('filterTags');
+    if (!box) return;
+    const cats = [...new Set(images.map(i => i.categoria).filter(Boolean))];
+    if (categoriaActiva !== 'todas' && !cats.some(c => c.toLowerCase() === categoriaActiva.toLowerCase())) categoriaActiva = 'todas';
+    box.innerHTML = ['todas', ...cats].map(cat =>
+        `<button type="button" class="filter-tag ${cat === categoriaActiva ? 'active' : ''}" data-category="${escapeHTML(cat)}">${cat === 'todas' ? 'Todas' : escapeHTML(cat)}</button>`
+    ).join('');
+    box.querySelectorAll('.filter-tag').forEach(btn => btn.addEventListener('click', () => {
+        categoriaActiva = btn.dataset.category;
+        box.querySelectorAll('.filter-tag').forEach(b => b.classList.toggle('active', b === btn));
+        searchImages();
     }));
 }
 
+function searchImages() {
+    const query = (document.getElementById('imageSearchInput')?.value || '').toLowerCase().trim();
+    const filtered = allImages.filter(img =>
+        (categoriaActiva === 'todas' || img.categoria.toLowerCase() === categoriaActiva.toLowerCase()) &&
+        (!query || `${img.nombre} ${img.categoria} ${img.descripcion}`.toLowerCase().includes(query))
+    );
+    renderImageGrid(filtered);
+}
+
+/* ---------- Grilla ---------- */
 function renderImageGrid(images) {
     const container = document.getElementById('imageResults');
     if (!container) return;
-    if (!images || images.length === 0) {
-        container.innerHTML = '<p class="load-error">No se encontraron imágenes</p>';
+    if (!images.length) {
+        container.innerHTML = '<p class="load-error">Todavía no hay imágenes o no se encontraron resultados.</p>';
         return;
     }
-    let html = '<div class="image-grid">';
-    images.forEach(img => {
-        const nombre = img.Nombre || 'Sin nombre';
-        const categoria = img.Categoría || img.Categoria || '';
-        const desc = img.Descripción || img.Descripcion || '';
-        const url = img.URL || img.Url || '';
-        const placeholder = 'https://via.placeholder.com/400x300?text=' + encodeURIComponent(nombre);
-        html += `
-            <div class="image-card">
-                <img src="${url || placeholder}" alt="${nombre}" onerror="this.src='${placeholder}'">
-                <div class="image-info">
-                    <div class="image-name">${nombre}</div>
-                    ${categoria ? `<div class="image-category">${categoria}</div>` : ''}
-                    ${desc ? `<div class="image-desc">${desc}</div>` : ''}
-                    ${url ? `<a href="${url}" target="_blank" class="btn-view"><i class="fas fa-external-link-alt"></i> Ver</a>` : ''}
-                </div>
-            </div>`;
-    });
-    html += '</div>';
-    container.innerHTML = html;
+    container.innerHTML = `<div class="image-grid">${images.map((img, index) => `
+        <article class="image-card">
+          <button type="button" class="image-thumb" data-image-index="${index}" aria-label="Ampliar ${escapeHTML(img.nombre)}">
+            <img src="${img.url}" alt="${escapeHTML(img.nombre)}" loading="lazy">
+          </button>
+          <div class="image-info">
+            <div class="image-name">${escapeHTML(img.nombre)}</div>
+            ${img.categoria ? `<div class="image-category">${escapeHTML(img.categoria)}</div>` : ''}
+            ${img.descripcion ? `<div class="image-desc">${escapeHTML(img.descripcion)}</div>` : ''}
+          </div>
+        </article>`).join('')}</div>`;
+
+    container.querySelectorAll('[data-image-index]').forEach((btn, index) =>
+        btn.addEventListener('click', () => abrirImagenModal(images[index])));
+    container.querySelectorAll('.image-thumb img').forEach(img =>
+        img.addEventListener('error', () => { img.alt = 'No se pudo cargar esta imagen'; img.style.display = 'none'; }, { once: true }));
+}
+
+/* ---------- Modal ---------- */
+function imgExtension(tipo) {
+    return ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' })[tipo] || 'png';
+}
+
+function abrirImagenModal(img) {
+    document.getElementById('imageModalImg').src = img.url;
+    document.getElementById('imageModalImg').alt = img.nombre;
+    document.getElementById('imageModalTitle').textContent = img.nombre;
+    document.getElementById('imageModalDesc').textContent = img.descripcion;
+
+    const download = document.getElementById('imageDownloadBtn');
+    download.href = img.url;
+    const base = img.nombre.replace(/[\\/:*?"<>|]/g, '_').trim() || 'imagen';
+    download.setAttribute('download', `${base}.${imgExtension(img.tipo)}`);
+
+    const del = document.getElementById('imageDeleteBtn');
+    del.hidden = !imgPuedeEliminar();
+    del.onclick = () => eliminarImagen(img);
+
+    document.getElementById('imageModal').hidden = false;
+    document.body.classList.add('image-modal-open');
+}
+
+function cerrarImagenModal() {
+    const modal = document.getElementById('imageModal');
+    if (modal) modal.hidden = true;
+    document.body.classList.remove('image-modal-open');
+}
+
+function cerrarModalConEscape(e) {
+    if (e.key === 'Escape') cerrarImagenModal();
+}
+
+/* ---------- Subir ---------- */
+async function subirImagen(e) {
+    e.preventDefault();
+    if (!imgPuedeSubir()) { alert('No tenés permiso para subir imágenes.'); return; }
+
+    const form = e.currentTarget;
+    const status = document.getElementById('imageUploadStatus');
+    const button = form.querySelector('button[type="submit"]');
+    const archivo = form.elements['imagen'].files[0];
+    const nombre = form.elements['nombre'].value.trim();
+
+    if (!archivo) { status.textContent = 'Elegí una imagen.'; return; }
+    if (!IMG_TIPOS.includes(archivo.type)) { status.textContent = 'Formato no permitido (JPG, PNG, WEBP o GIF).'; return; }
+    if (archivo.size > IMG_MAX_BYTES) { status.textContent = 'La imagen supera los 10 MB.'; return; }
+    if (!nombre) { status.textContent = 'Escribí un nombre.'; return; }
+
+    button.disabled = true;
+    status.textContent = 'Subiendo a Cloudinary...';
+    try {
+        // 1. Subir archivo directo a Cloudinary (preset sin firma)
+        const fd = new FormData();
+        fd.append('file', archivo);
+        fd.append('upload_preset', UPLOAD_PRESET);
+        const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+            method: 'POST',
+            body: fd
+        });
+        const cloudData = await cloudRes.json();
+        if (cloudData.error) throw new Error(cloudData.error.message || 'Error al subir a Cloudinary.');
+
+        // 2. Guardar metadatos en MySQL
+        const apiRes = await fetch(`${API_BASE}/guardar_imagen.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nombre,
+                categoria: form.elements['categoria'].value.trim(),
+                descripcion: form.elements['descripcion'].value.trim(),
+                secure_url: cloudData.secure_url,
+                public_id: cloudData.public_id,
+                tipo: archivo.type,
+                peso: archivo.size
+            })
+        });
+        const apiData = await apiRes.json();
+        if (!apiData.success) throw new Error(apiData.mensaje || 'No se pudo registrar la imagen.');
+
+        form.reset();
+        status.textContent = 'Imagen subida correctamente.';
+        await cargarImagenes();
+    } catch (error) {
+        status.textContent = error.message || 'No se pudo subir la imagen.';
+    } finally {
+        button.disabled = false;
+    }
+}
+
+/* ---------- Eliminar ---------- */
+async function eliminarImagen(img) {
+    if (!imgPuedeEliminar()) { return; }
+    if (img.id == null || !confirm(`¿Seguro que querés eliminar “${img.nombre || 'esta imagen'}”?`)) return;
+    try {
+        const res = await fetch(`${API_BASE}/eliminar_imagen.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: img.id, public_id: img.public_id })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.mensaje || 'No se pudo eliminar.');
+        cerrarImagenModal();
+        await cargarImagenes();
+        } catch (error) {
+            console.error('No se pudo eliminar la imagen:', error);
+        }
 }
 
 /* ==========================================
    RENDER WHATSAPP
    ========================================== */
-function renderWhatsApp() {
+async function renderWhatsApp() {
     panelTitle.innerText = '📱 WhatsApp Institucional';
 
     const mensajesPredefinidos = [
@@ -214,33 +389,74 @@ function renderWhatsApp() {
         { id: 'custom', value: 'custom', label: 'Escribir mensaje propio...' }
     ];
 
-    let html = `
+    panelContent.innerHTML = `
         <div class="whatsapp-form">
             <h4><i class="fas fa-paper-plane"></i> Enviar Mensaje por WhatsApp</h4>
             <div class="form-group">
                 <label for="contactSelect"><i class="fas fa-user"></i> Seleccionar Contacto:</label>
                 <select id="contactSelect" class="form-select">
-                    <option value="">-- Elegir contacto --</option>`;
+                    <option value="">-- Cargando contactos --</option>
+                </select>
+            </div>
+        </div>`;
 
-    contactosRepresentantes.forEach(c => {
-        html += `<option value="${c.telefono}">${c.nombre} (${c.rol}) - ${c.alumno}</option>`;
-    });
+    contactosRepresentantes = await cargarContactosWhatsApp();
 
-    html += `</select></div>
+    if (!contactosRepresentantes.length) {
+        panelContent.innerHTML = `
+            <div class="whatsapp-form">
+                <h4><i class="fas fa-paper-plane"></i> Enviar Mensaje por WhatsApp</h4>
+                <p class="load-error">No hay contactos con teléfono disponibles en la base de datos.</p>
+            </div>`;
+        return;
+    }
+
+    const mensajesHtml = mensajesPredefinidos.map(m => {
+        if (m.id === 'custom') {
+            return `<option value="${m.value}">${m.label}</option>`;
+        }
+        return `<option value="${m.texto}">${m.texto.substring(0, 50)}${m.texto.length > 50 ? '...' : ''}</option>`;
+    }).join('');
+
+    const contactOptionsHtml = contactosRepresentantes.map(c => {
+        const detalle = c.alumno ? ` - ${escapeHTML(c.alumno)}` : '';
+        return `<option value="${escapeHTML(c.telefono)}">${escapeHTML(c.nombre)} (${escapeHTML(c.rol)})${detalle}</option>`;
+    }).join('');
+
+    const contactListHtml = contactosRepresentantes.map(c => {
+        const rolDetalle = c.alumno
+            ? `${escapeHTML(c.rol)} (${escapeHTML(c.alumno)})`
+            : escapeHTML(c.rol);
+        return `<div class="contact-item">
+            <div class="contact-name">${escapeHTML(c.nombre)}</div>
+            <div class="contact-role">${rolDetalle}</div>
+            <div class="contact-phone"><i class="fab fa-whatsapp"></i> ${escapeHTML(c.telefono)}</div>
+        </div>`;
+    }).join('');
+
+    panelContent.innerHTML = `
+        <div class="whatsapp-form">
+            <h4><i class="fas fa-paper-plane"></i> Enviar Mensaje por WhatsApp</h4>
+            <div class="form-group">
+                <label for="tutorSearch"><i class="fas fa-search"></i> Buscar contacto:</label>
+                <input type="text" id="tutorSearch" class="form-input" placeholder="Buscar por nombre, alumno o rol...">
+            </div>
+            <div class="form-group">
+                <label for="contactSelect"><i class="fas fa-user"></i> Seleccionar Contacto:</label>
+                <div id="contactSelectContainer">
+                    <select id="contactSelect" class="form-select">
+                        <option value="">-- Elegir contacto --</option>
+                        ${contactOptionsHtml}
+                    </select>
+                </div>
+            </div>
             <div class="form-group">
                 <label for="messageSelect"><i class="fas fa-comment"></i> Seleccionar Mensaje:</label>
                 <select id="messageSelect" class="form-select">
-                    <option value="">-- Elegir mensaje predefinido --</option>`;
-
-    mensajesPredefinidos.forEach(m => {
-        if (m.id === 'custom') {
-            html += `<option value="${m.value}">${m.label}</option>`;
-        } else {
-            html += `<option value="${m.texto}">${m.texto.substring(0, 50)}${m.texto.length > 50 ? '...' : ''}</option>`;
-        }
-    });
-
-    html += `</select></div>
+                    <option value="">-- Elegir mensaje predefinido --</option>
+                    ${mensajesHtml}
+                </select>
+            </div>
             <div class="form-group" id="customMessageGroup" style="display:none;">
                 <label for="customMessage"><i class="fas fa-edit"></i> Mensaje Personalizado:</label>
                 <textarea id="customMessage" class="form-textarea" rows="3" placeholder="Escriba su mensaje aquí..."></textarea>
@@ -252,23 +468,48 @@ function renderWhatsApp() {
             </div>
         </div>
         <div class="whatsapp-section">
-
-            <div class="contact-list">`;
-
-    contactosRepresentantes.forEach(c => {
-        html += `
-            <div class="contact-item">
-                <div class="contact-name">${c.nombre}</div>
-                <div class="contact-role">${c.rol} (${c.alumno})</div>
-                <div class="contact-phone"><i class="fab fa-whatsapp"></i> ${c.telefono}</div>
-            </div>`;
-    });
-
-    html += `</div>
+            <div id="contactListContainer">
+                <div class="contact-list">
+                    ${contactListHtml}
+                </div>
+            </div>
             <p class="privacy-note">ℹ️ Para enviar mensajes use el formulario de arriba.</p>
         </div>`;
 
-    panelContent.innerHTML = html;
+    document.getElementById('tutorSearch').addEventListener('input', function () {
+        const q = this.value.toLowerCase().trim();
+        const filtrados = contactosRepresentantes.filter(c =>
+            `${c.nombre} ${c.rol} ${c.alumno} ${c.telefono}`.toLowerCase().includes(q)
+        );
+
+        const select = document.getElementById('contactSelect');
+        const primero = select.querySelector('option');
+        select.innerHTML = '';
+        select.appendChild(primero);
+        filtrados.forEach(c => {
+            const o = document.createElement('option');
+            o.value = c.telefono;
+            o.textContent = c.alumno
+                ? `${c.nombre} (${c.rol}) - ${c.alumno}`
+                : `${c.nombre} (${c.rol})`;
+            select.appendChild(o);
+        });
+
+        const listContainer = document.getElementById('contactListContainer');
+        listContainer.innerHTML = `
+            <div class="contact-list">
+                ${filtrados.map(c => {
+                    const rolDetalle = c.alumno
+                        ? `${escapeHTML(c.rol)} (${escapeHTML(c.alumno)})`
+                        : escapeHTML(c.rol);
+                    return `<div class="contact-item">
+                        <div class="contact-name">${escapeHTML(c.nombre)}</div>
+                        <div class="contact-role">${rolDetalle}</div>
+                        <div class="contact-phone"><i class="fab fa-whatsapp"></i> ${escapeHTML(c.telefono)}</div>
+                    </div>`;
+                }).join('')}
+            </div>`;
+    });
 
     document.getElementById('messageSelect').addEventListener('change', function () {
         const customGroup = document.getElementById('customMessageGroup');
@@ -318,7 +559,7 @@ const TABLAS = [
 ];
 
 // URL base para todas las llamadas a la API
-const API_BASE = '/TeChina/api';
+const API_BASE = '/ATLAS/api';
 
 /* ==========================================
    PERMISOS POR ROL
@@ -409,10 +650,12 @@ function renderBasedeDatos() {
                         <button class="db-btn-add" onclick="dbMostrarFormulario()">
                             <i class="fas fa-plus"></i> Agregar
                         </button>
+                        <div id="db-bar-msg" class="db-msg" aria-live="polite"></div>
                     </div>
                 </div>
 
                 <div id="db-form" class="db-form db-oculto">
+                <div id="db-form-msg" class="db-msg" aria-live="polite"></div>
                     <div id="db-form-campos" class="db-form-campos"></div>
                     <div class="db-form-btns">
                         <button class="db-btn-save" onclick="dbGuardar()">
@@ -695,8 +938,24 @@ function dbEditar(fila) {
 }
 
 /* — GUARDAR — */
+function dbBarMsg(text, ok) {
+    const el = document.getElementById('db-bar-msg');
+    if (!el) return;
+    el.className = 'db-msg ' + (ok ? 'db-msg-ok' : 'db-msg-err');
+    el.textContent = text;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.textContent = ''; el.className = 'db-msg'; }, 4000);
+}
+
+function dbFormMsg(text, ok) {
+    const el = document.getElementById('db-form-msg');
+    if (!el) return;
+    el.className = 'db-msg ' + (ok ? 'db-msg-ok' : 'db-msg-err');
+    el.textContent = text;
+}
+
 async function dbGuardar() {
-    if (!tablaActiva) { alert('Error: no hay tabla seleccionada.'); return; }
+    if (!tablaActiva) { dbFormMsg('Error: no hay tabla seleccionada.', false); return; }
 
     const campos = document.querySelectorAll('#db-form-campos input, #db-form-campos select');
     const datos  = {};
@@ -717,18 +976,19 @@ async function dbGuardar() {
             result = JSON.parse(texto);
         } catch (parseErr) {
             console.error('Respuesta no-JSON del servidor:', texto);
-            alert('❌ Error al guardar. El servidor no devolvió una respuesta válida (ver consola para más detalle).');
+            dbFormMsg('Error al guardar: respuesta inválida del servidor.', false);
             return;
         }
-        alert(result.mensaje || result.error || 'Guardado');
+        if (result.error) { dbFormMsg(result.error, false); return; }
+        const formMsg = result.mensaje || 'Guardado correctamente.';
         dbCancelarForm();
         dbListar();
+        dbBarMsg(formMsg, true);
     } catch (e) {
         console.error('Error de red al guardar:', e);
-        alert('❌ Error al guardar. No se pudo contactar al servidor (ver consola).');
+        dbFormMsg('Error al guardar. No se pudo contactar al servidor.', false);
     }
 }
-
 /* — ELIMINAR — */
 async function dbEliminar(pk) {
     if (!tablaActiva) return;
@@ -740,10 +1000,11 @@ async function dbEliminar(pk) {
             body:    JSON.stringify({ accion: 'eliminar', tabla: tablaActiva, ...pk })
         });
         const result = await res.json();
-        alert(result.mensaje || result.error || 'Eliminado');
+        if (result.error) { dbBarMsg(result.error, false); } else { dbBarMsg(result.mensaje || 'Eliminado correctamente.', true); }
         dbListar();
     } catch (e) {
-        alert('❌ Error al eliminar.');
+        console.error('Error al eliminar:', e);
+        dbBarMsg('Error al eliminar.', false);
     }
 }
 

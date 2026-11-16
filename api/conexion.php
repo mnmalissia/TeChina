@@ -8,7 +8,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 mysqli_report(MYSQLI_REPORT_OFF);
 
-$conn = new mysqli('localhost', 'rootX', 'rootX', 'proadb');
+$conn = new mysqli('localhost', 'root', '', 'proadb');
 
 if ($conn->connect_error) {
     http_response_code(500);
