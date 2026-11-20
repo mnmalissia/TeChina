@@ -8,11 +8,11 @@ session_start();
 
 header('Content-Type: application/json; charset=utf-8');
 
-$usuarioId = (int)($_SESSION['id'] ?? 0);
-$where = $usuarioId ? 'WHERE usuario_id = ' . $usuarioId : '';
+// Todas las imágenes son visibles para todos los roles (institucional)
+// Si se quiere filtrar por rol, agregar lógica aquí
 
-$sql = "SELECT id, usuario_id, nombre, secure_url, public_id, fecha_subida
-        FROM imagenes $where
+$sql = "SELECT id, usuario_id, nombre, categoria, descripcion, tipo, secure_url, public_id, peso, fecha_subida
+        FROM imagenes
         ORDER BY fecha_subida DESC";
 
 $res = $conn->query($sql);

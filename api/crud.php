@@ -172,8 +172,13 @@ function filtrarSensibles(array $filas): array {
 }
 
 // Traduce un tipo de columna de MySQL al tipo que pide bind_param ('i','d','s')
-function tipoBind(string $mysqlType): string {
+function tipoBind(string $mysqlType, string $fieldName = ''): string {
     $t = strtolower($mysqlType);
+    // Los números de teléfono y DNI, aunque sean numéricos, pueden superar el límite de int (2147483647)
+    // y deben tratarse como strings para evitar overflow
+    if (in_array(strtolower($fieldName), ['numerodecontacto', 'dni'], true)) {
+        return 's';
+    }
     if (preg_match('/int|bit/', $t))               return 'i';
     if (preg_match('/decimal|float|double/', $t))  return 'd';
     return 's'; // varchar, char, text, date, datetime, enum, etc.
@@ -221,7 +226,7 @@ switch ($accion) {
     case 'buscar':
         $q = $_GET['q'] ?? '';
         $columnas = obtenerColumnas($conn, $tabla);
-        $columnasTexto = array_filter($columnas, fn($c) => tipoBind($c['Type']) === 's');
+        $columnasTexto = array_filter($columnas, fn($c) => tipoBind($c['Type'], $c['Field']) === 's');
 
         if (empty($columnasTexto)) { echo json_encode([]); break; }
 
@@ -250,7 +255,7 @@ switch ($accion) {
 
         $nombres   = array_map(fn($c) => "`{$c['Field']}`", $insertables);
         $signos    = array_fill(0, count($insertables), '?');
-        $tipos     = implode('', array_map(fn($c) => tipoBind($c['Type']), $insertables));
+        $tipos     = implode('', array_map(fn($c) => tipoBind($c['Type'], $c['Field']), $insertables));
         $valores   = array_map(fn($c) => ($body[$c['Field']] === '' ? null : $body[$c['Field']]), $insertables);
 
         $sql  = "INSERT INTO `$tabla` (" . implode(',', $nombres) . ") VALUES (" . implode(',', $signos) . ")";
@@ -292,8 +297,8 @@ switch ($accion) {
 
         $set    = array_map(fn($c) => "`{$c['Field']}` = ?", $actualizables);
         $where  = array_map(fn($c) => "`{$c['Field']}` = ?", $claves);
-        $tipos  = implode('', array_map(fn($c) => tipoBind($c['Type']), $actualizables))
-                . implode('', array_map(fn($c) => tipoBind($c['Type']), $claves));
+        $tipos  = implode('', array_map(fn($c) => tipoBind($c['Type'], $c['Field']), $actualizables))
+                . implode('', array_map(fn($c) => tipoBind($c['Type'], $c['Field']), $claves));
         $valores = array_merge(
             array_map(fn($c) => ($body[$c['Field']] === '' ? null : $body[$c['Field']]), $actualizables),
             array_map(fn($c) => $body[$c['Field']] ?? null, $claves)
@@ -328,7 +333,7 @@ switch ($accion) {
         }
 
         $where = array_map(fn($c) => "`{$c['Field']}` = ?", $claves);
-        $tipos = implode('', array_map(fn($c) => tipoBind($c['Type']), $claves));
+        $tipos = implode('', array_map(fn($c) => tipoBind($c['Type'], $c['Field']), $claves));
         $valores = array_map(fn($c) => $body[$c['Field']] ?? null, $claves);
 
         $sql  = "DELETE FROM `$tabla` WHERE " . implode(' AND ', $where);

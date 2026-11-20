@@ -920,3 +920,37 @@ body.image-modal-open {
 }
 .db-msg-ok { background: #e8f7ee; color: #1e7e34; border: 1px solid #b7e1c1; }
 .db-msg-err { background: #fdecea; color: #b02a37; border: 1px solid #f5c2c7; }
+
+/* Botones de confirmación en mensaje de barra */
+.db-msg .db-btn-confirm,
+.db-msg .db-btn-cancel-confirm {
+    margin-left: 10px;
+    padding: 4px 10px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.2s;
+}
+.db-msg .db-btn-confirm {
+    background: #e74c3c;
+    color: white;
+}
+.db-msg .db-btn-confirm:hover { background: #c0392b; }
+.db-msg .db-btn-cancel-confirm {
+    background: #95a5a6;
+    color: white;
+}
+.db-msg .db-btn-cancel-confirm:hover { background: #7f8c8d; }
+
+/* Botón de eliminación en modo confirmación */
+.image-delete-btn.confirming {
+    background: #27ae60 !important;
+}
+.image-delete-btn.confirming:hover {
+    background: #1e8449 !important;
+}

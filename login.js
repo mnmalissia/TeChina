@@ -19,7 +19,7 @@ function limpiarMensaje(elemento) {
 }
 
 function guardarSesion(usuario) {
-    sessionStorage.setItem('aura_session', JSON.stringify({
+    sessionStorage.setItem('atlas_session', JSON.stringify({
         user: usuario.nombre,
         email: usuario.email,
         rol: usuario.rol,

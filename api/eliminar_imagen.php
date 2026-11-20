@@ -19,6 +19,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $usuarioId = (int)($_SESSION['id'] ?? 0);
 $rol       = $_SESSION['rol'] ?? '';
 
+if (strtolower($rol) === 'estudiante' || strtolower($rol) === 'alumno') {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'mensaje' => 'Los estudiantes solo pueden descargar imágenes, no eliminarlas.']);
+    exit;
+}
+
 $entrada = json_decode(file_get_contents('php://input'), true) ?? [];
 $id      = (int)($entrada['id'] ?? 0);
 

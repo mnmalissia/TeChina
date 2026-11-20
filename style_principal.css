@@ -80,9 +80,38 @@
             font-weight: 600;
             cursor: pointer;
             transition: 0.2s;
+            z-index: 10;
         }
         .logout-btn:hover {
             background: #cbd5e1;
+        }
+
+        /* Usuario en header */
+        .header-user {
+            position: absolute;
+            top: -2.2rem;
+            right: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: #2c3e66;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .header-user i {
+            font-size: 1.2rem;
+            color: #2a5298;
+        }
+        .rol-badge {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 0.15rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
 
         .cards-grid {

@@ -8,7 +8,7 @@ const closeBtn = document.getElementById('closePanelBtn');
 /* ==========================================
    VERIFICACIÓN DE SESIÓN
    ========================================== */
-const session = sessionStorage.getItem('aura_session');
+const session = sessionStorage.getItem('atlas_session') || sessionStorage.getItem('aura_session');
 
 if (!session) {
     window.location.href = 'index.html';
@@ -17,6 +17,11 @@ if (!session) {
         const sessionData = JSON.parse(session);
         if (!sessionData.loggedIn) {
             throw new Error();
+        }
+        // Migración automática de la clave vieja a la nueva
+        if (!sessionStorage.getItem('atlas_session') && sessionStorage.getItem('aura_session')) {
+            sessionStorage.setItem('atlas_session', session);
+            sessionStorage.removeItem('aura_session');
         }
         window.NOMBRE_USUARIO = sessionData.user;
         window.ROL_USUARIO = sessionData.rol;
@@ -30,6 +35,12 @@ const SALUDO = (typeof window.NOMBRE_USUARIO === 'string' && window.NOMBRE_USUAR
     : 'Director';
 if (panelTitle) panelTitle.innerText = 'Bienvenido, ' + SALUDO;
 
+// Mostrar usuario en header
+const headerUser = document.createElement('div');
+headerUser.className = 'header-user';
+headerUser.innerHTML = `<i class="fas fa-user-circle"></i> ${SALUDO} <span class="rol-badge">${window.ROL_USUARIO}</span>`;
+document.querySelector('.header').prepend(headerUser);
+
 /* ==========================================
    CIERRE DE SESIÓN
    Borra la sesión de PHP (cookie) y la del cliente. Sin la
@@ -41,7 +52,7 @@ document.getElementById('logoutBtn')?.addEventListener('click', async () => {
     } catch (e) {
         console.warn('No se pudo cerrar la sesión en el servidor:', e);
     }
-    sessionStorage.removeItem('aura_session');
+    sessionStorage.removeItem('atlas_session');
     window.location.href = 'index.html';
 });
 
@@ -66,7 +77,7 @@ async function cargarContactosWhatsApp() {
         ]);
 
         if (resTutores.status === 401 || resEstudiantes.status === 401) {
-            sessionStorage.removeItem('aura_session');
+            sessionStorage.removeItem('atlas_session');
             window.location.href = 'index.html';
             return [];
         }
@@ -76,24 +87,51 @@ async function cargarContactosWhatsApp() {
         if (!Array.isArray(tutores)) return [];
 
         const alumnosPorTutor = {};
+        const alumnosConFaltantes = {};
+
         if (Array.isArray(estudiantes)) {
             estudiantes.forEach(e => {
                 const tutor = String(e.Tutor || '').trim();
                 const alumno = String(e.Nombre_Completo || e.nombre || '').trim();
                 if (!tutor || !alumno) return;
+
                 if (!alumnosPorTutor[tutor]) alumnosPorTutor[tutor] = [];
+                if (!alumnosConFaltantes[tutor]) alumnosConFaltantes[tutor] = [];
+
                 alumnosPorTutor[tutor].push(alumno);
+
+                const motivos = [];
+                const cus = e.CUS;
+                const isa = e.ISA;
+                const autorizacion = e.AutorizacionDeImagen;
+
+                if (cus === undefined || cus === null || cus === '' || parseInt(cus, 10) !== 1) {
+                    motivos.push('CUS');
+                }
+                if (isa === undefined || isa === null || isa === '' || parseInt(isa, 10) !== 1) {
+                    motivos.push('ISA');
+                }
+                if (autorizacion === undefined || autorizacion === null || autorizacion === '' || parseInt(autorizacion, 10) !== 1) {
+                    motivos.push('Autorización de imagen');
+                }
+
+                if (motivos.length > 0) {
+                    alumnosConFaltantes[tutor].push({ nombre: alumno, motivos });
+                }
             });
         }
 
         return tutores.map(t => {
             const nombre = String(t.Nombre_Completo || t.NombreTutor || t.nombre || t.Nombre || 'Sin nombre').trim();
             const alumnos = alumnosPorTutor[nombre] || [];
+            const faltantes = alumnosConFaltantes[nombre] || [];
             return {
                 telefono: String(t.NumeroDeContacto ?? t.telefono ?? '').trim(),
                 nombre,
                 rol: 'Tutor',
-                alumno: alumnos.join(', ')
+                alumno: alumnos.join(', '),
+                faltantes,
+                tieneFaltantes: faltantes.length > 0
             };
         }).filter(c => c.telefono);
     } catch (e) {
@@ -131,9 +169,13 @@ function imgRol() {
         .trim();
 }
 function imgPuedeSubir() {
-    return ['director', 'preceptor', 'profesor', 'profesores', 'profesora'].includes(imgRol());
+    const r = imgRol();
+    return r !== 'estudiante' && r !== 'alumno';
 }
-function imgPuedeEliminar() { return imgRol() === 'director'; }
+function imgPuedeEliminar() {
+    const r = imgRol();
+    return r !== 'estudiante' && r !== 'alumno';
+}
 
 /* ---------- Render principal ---------- */
 function renderImagen() {
@@ -146,7 +188,19 @@ function renderImagen() {
             <h5>Agregar imagen</h5>
             <label>Imagen <input type="file" name="imagen" accept="image/jpeg,image/png,image/webp,image/gif" required></label>
             <label>Nombre <input type="text" name="nombre" maxlength="120" required placeholder="Nombre de la imagen"></label>
-            <label>Categoría <input type="text" name="categoria" maxlength="80" placeholder="Ej. Institucional"></label>
+            <label>Categoría 
+                <select name="categoria" required>
+                    <option value="">-- Seleccionar categoría --</option>
+                    <option value="Institucional">Institucional</option>
+                    <option value="Eventos">Eventos</option>
+                    <option value="Actividades">Actividades</option>
+                    <option value="Instalaciones">Instalaciones</option>
+                    <option value="Personal">Personal</option>
+                    <option value="Estudiantes">Estudiantes</option>
+                    <option value="Documentos">Documentos</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </label>
             <label>Descripción <input type="text" name="descripcion" maxlength="250" placeholder="Descripción opcional"></label>
             <button class="search-btn" type="submit"><i class="fas fa-upload"></i> Subir imagen</button>
             <p id="imageUploadStatus" role="status"></p>
@@ -166,8 +220,7 @@ function renderImagen() {
             <a id="imageDownloadBtn" class="search-btn" download><i class="fas fa-download"></i> Descargar</a>
             <button id="imageDeleteBtn" class="image-delete-btn" type="button" hidden><i class="fas fa-trash"></i> Eliminar imagen</button>
           </div>
-        </div>
-      </div>`;
+        </div>`;
 
     categoriaActiva = 'todas';
     document.getElementById('searchBtn').addEventListener('click', searchImages);
@@ -185,7 +238,7 @@ async function cargarImagenes() {
     try {
         const res = await fetch(`${API_BASE}/listar_imagenes.php`);
         if (res.status === 401) {
-            sessionStorage.removeItem('aura_session');
+            sessionStorage.removeItem('atlas_session');
             window.location.href = 'index.html';
             return;
         }
@@ -277,9 +330,26 @@ function abrirImagenModal(img) {
     document.getElementById('imageModalDesc').textContent = img.descripcion;
 
     const download = document.getElementById('imageDownloadBtn');
-    download.href = img.url;
     const base = img.nombre.replace(/[\\/:*?"<>|]/g, '_').trim() || 'imagen';
-    download.setAttribute('download', `${base}.${imgExtension(img.tipo)}`);
+    const filename = `${base}.${imgExtension(img.tipo)}`;
+
+    // Usar el atributo download nativo - Cloudinary tiene CORS habilitado
+    download.href = img.url;
+    download.download = filename;
+    download.onclick = null; // quitar handler anterior si existía
+
+    // Fallback para navegadores que bloquean download cross-origin
+    download.addEventListener('click', function handleDownload(e) {
+        // Si el download nativo funcionó, no hacer nada extra
+        // Si falla (href mismo origen pero download ignorado), forzar blob
+        setTimeout(() => {
+            if (download.href === img.url) {
+                // El navegador no descargó, intentar método blob
+                download.href = '#';
+                forceBlobDownload(img.url, filename);
+            }
+        }, 100);
+    }, { once: true });
 
     const del = document.getElementById('imageDeleteBtn');
     del.hidden = !imgPuedeEliminar();
@@ -287,6 +357,34 @@ function abrirImagenModal(img) {
 
     document.getElementById('imageModal').hidden = false;
     document.body.classList.add('image-modal-open');
+}
+
+function forceBlobDownload(url, filename) {
+    const download = document.getElementById('imageDownloadBtn');
+    download.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Descargando...';
+    download.disabled = true;
+
+    fetch(url)
+        .then(r => { if (!r.ok) throw new Error('Error de red'); return r.blob(); })
+        .then(blob => {
+            const objectUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = objectUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(objectUrl);
+        })
+        .catch(err => {
+            console.error('Error al descargar:', err);
+            alert('No se pudo descargar. Intente clic derecho > "Guardar imagen como..."');
+        })
+        .finally(() => {
+            download.innerHTML = '<i class="fas fa-download"></i> Descargar';
+            download.disabled = false;
+            download.href = url; // restaurar
+        });
 }
 
 function cerrarImagenModal() {
@@ -302,11 +400,10 @@ function cerrarModalConEscape(e) {
 /* ---------- Subir ---------- */
 async function subirImagen(e) {
     e.preventDefault();
-    if (!imgPuedeSubir()) { alert('No tenés permiso para subir imágenes.'); return; }
-
     const form = e.currentTarget;
     const status = document.getElementById('imageUploadStatus');
     const button = form.querySelector('button[type="submit"]');
+    if (!imgPuedeSubir()) { status.textContent = 'No tenés permiso para subir imágenes.'; return; }
     const archivo = form.elements['imagen'].files[0];
     const nombre = form.elements['nombre'].value.trim();
 
@@ -359,20 +456,57 @@ async function subirImagen(e) {
 /* ---------- Eliminar ---------- */
 async function eliminarImagen(img) {
     if (!imgPuedeEliminar()) { return; }
-    if (img.id == null || !confirm(`¿Seguro que querés eliminar “${img.nombre || 'esta imagen'}”?`)) return;
-    try {
-        const res = await fetch(`${API_BASE}/eliminar_imagen.php`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: img.id, public_id: img.public_id })
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.mensaje || 'No se pudo eliminar.');
-        cerrarImagenModal();
-        await cargarImagenes();
+    if (img.id == null) return;
+
+    const modal = document.getElementById('imageModal');
+    const actions = modal.querySelector('.image-modal-actions');
+    const deleteBtn = document.getElementById('imageDeleteBtn');
+    const downloadBtn = document.getElementById('imageDownloadBtn');
+
+    if (deleteBtn.dataset.confirming === 'true') {
+        deleteBtn.dataset.confirming = 'false';
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Eliminar imagen';
+        deleteBtn.classList.remove('confirming');
+        downloadBtn.hidden = false;
+        return;
+    }
+
+    deleteBtn.dataset.confirming = 'true';
+    deleteBtn.innerHTML = '<i class="fas fa-check"></i> Confirmar';
+    deleteBtn.classList.add('confirming');
+    downloadBtn.hidden = true;
+
+    setTimeout(() => {
+        if (deleteBtn.dataset.confirming === 'true') {
+            deleteBtn.dataset.confirming = 'false';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Eliminar imagen';
+            deleteBtn.classList.remove('confirming');
+            downloadBtn.hidden = false;
+        }
+    }, 5000);
+
+    deleteBtn.onclick = async () => {
+        if (deleteBtn.dataset.confirming !== 'true') return;
+        deleteBtn.dataset.confirming = 'false';
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
+        deleteBtn.disabled = true;
+
+        try {
+            const res = await fetch(`${API_BASE}/eliminar_imagen.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: img.id, public_id: img.public_id })
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.mensaje || 'No se pudo eliminar.');
+            cerrarImagenModal();
+            await cargarImagenes();
         } catch (error) {
             console.error('No se pudo eliminar la imagen:', error);
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Eliminar imagen';
+            deleteBtn.disabled = false;
         }
+    };
 }
 
 /* ==========================================
@@ -401,6 +535,10 @@ async function renderWhatsApp() {
         </div>`;
 
     contactosRepresentantes = await cargarContactosWhatsApp();
+
+    // Mapa de teléfono a contacto para usar al precargar mensajes
+    const contactosPorTelefonos = {};
+    contactosRepresentantes.forEach(c => { contactosPorTelefonos[c.telefono] = c; });
 
     if (!contactosRepresentantes.length) {
         panelContent.innerHTML = `
@@ -462,6 +600,7 @@ async function renderWhatsApp() {
                 <textarea id="customMessage" class="form-textarea" rows="3" placeholder="Escriba su mensaje aquí..."></textarea>
             </div>
             <div class="form-actions">
+                <div id="whatsappFormMsg" class="db-msg" style="margin-bottom: 8px;"></div>
                 <button id="sendWhatsAppBtn" class="btn-send-whatsapp">
                     <i class="fab fa-whatsapp"></i> Enviar por WhatsApp
                 </button>
@@ -524,13 +663,40 @@ async function renderWhatsApp() {
         }
     });
 
+    // Precargar mensaje automático si el tutor tiene estudiantes con campos faltantes
+    document.getElementById('contactSelect').addEventListener('change', function () {
+        const telefono = this.value;
+        const contacto = contactosPorTelefonos[telefono];
+        const customMessage = document.getElementById('customMessage');
+        const customGroup = document.getElementById('customMessageGroup');
+        const messageSelect = document.getElementById('messageSelect');
+
+        if (contacto && contacto.tieneFaltantes && contacto.faltantes.length > 0) {
+            let mensaje = '';
+            contacto.faltantes.forEach(f => {
+                const motivosTexto = f.motivos.join(', ');
+                mensaje += `Hola ${contacto.nombre} a su hijo ${f.nombre} le falta el ${motivosTexto}.\n`;
+            });
+            customMessage.value = mensaje.trim();
+            customGroup.style.display = 'block';
+            messageSelect.value = 'custom';
+        } else {
+            customMessage.value = '';
+            customGroup.style.display = 'none';
+            messageSelect.value = '';
+        }
+    });
+
     document.getElementById('sendWhatsAppBtn').addEventListener('click', function () {
         const telefono = document.getElementById('contactSelect').value;
         const mensajeSelect = document.getElementById('messageSelect').value;
         const customMessage = document.getElementById('customMessage').value.trim();
-        if (!telefono) { alert('Por favor seleccione un contacto'); return; }
+        const msgEl = document.getElementById('whatsappFormMsg');
+        if (!telefono) { msgEl.className = 'db-msg db-msg-err'; msgEl.textContent = 'Por favor seleccione un contacto'; return; }
         const mensaje = mensajeSelect === 'custom' ? customMessage : (mensajeSelect || customMessage);
-        if (!mensaje) { alert('Por favor seleccione o escriba un mensaje'); return; }
+        if (!mensaje) { msgEl.className = 'db-msg db-msg-err'; msgEl.textContent = 'Por favor seleccione o escriba un mensaje'; return; }
+        msgEl.textContent = '';
+        msgEl.className = 'db-msg';
         const telefonoLimpio = telefono.replace(/\D/g, '');
         window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
     });
@@ -549,7 +715,6 @@ const TABLAS = [
     { id: 'materias',                      label: ' Materias',              icono: 'fas fa-book' },
     { id: 'profesores',                    label: ' Profesores',           icono: 'fas fa-chalkboard-teacher' },
     { id: 'tutores',                       label: ' Tutores',               icono: 'fas fa-user-friends' },
-    { id: 'estudiantes_tutores',           label: ' Estudiantes-Tutores',   icono: 'fas fa-link' },
     { id: 'aulas',                         label: ' Aulas',                 icono: 'fas fa-door-open' },
     { id: 'horarios',                      label: ' Horarios',              icono: 'fas fa-clock' },
     { id: 'inventarioelementosgenerales',  label: ' Inventario General',    icono: 'fas fa-boxes' },
@@ -591,7 +756,7 @@ async function cargarPermisos() {
         const res = await fetch(API_BASE + '/permisos.php');
 
         if (res.status === 401) {
-            sessionStorage.removeItem('aura_session');
+            sessionStorage.removeItem('atlas_session');
             window.location.href = 'index.html';
             return false;
         }
@@ -609,6 +774,8 @@ async function cargarPermisos() {
 function aplicarPermisosACards() {
     document.querySelectorAll('.card').forEach(card => {
         const mod = MODULO_DE_CARD[card.getAttribute('data-action')];
+        // La galería de imágenes se muestra a todos los roles
+        if (card.getAttribute('data-action') === 'imagen') return;
         if (mod && !puedeVerModulo(mod)) card.remove();
     });
 }
@@ -685,7 +852,7 @@ async function cargarColumnas(tabla) {
 
     // 401 = la sesión de PHP ya no sirve (logout, cookie vencida).
     if (res.status === 401) {
-        sessionStorage.removeItem('aura_session');
+        sessionStorage.removeItem('atlas_session');
         window.location.href = 'index.html';
         throw new Error('Sesión vencida');
     }
@@ -704,6 +871,7 @@ async function cargarColumnas(tabla) {
 /* — Deduce qué tipo de <input> conviene según el tipo de columna en MySQL — */
 function tipoInputDesdeColumna(col) {
     const tipo = col.Type.toLowerCase();
+    console.debug('[tipoInputDesdeColumna]', col.Field, col.Type);
     if (tipo.startsWith('enum')) return 'select';
     if (tipo.includes('date'))    return 'date';
     if (/int|decimal|float|double/.test(tipo)) return 'number';
@@ -832,6 +1000,7 @@ function dbRenderTabla(data) {
    estudiantes) se muestran como un <select> con los datos reales de la
    tabla referenciada, para no permitir guardar un valor que no exista. */
 async function dbMostrarFormulario(datos = {}) {
+    console.debug('[dbMostrarFormulario] tabla=', tablaActiva, 'datos=', datos);
     document.getElementById('db-form').classList.remove('db-oculto');
     const contenedor = document.getElementById('db-form-campos');
     contenedor.innerHTML = '<p class="db-loading">⏳ Cargando formulario...</p>';
@@ -877,6 +1046,32 @@ async function dbMostrarFormulario(datos = {}) {
                     </select>
                 </div>`;
         }
+        // Campos de correo: type=email y patrón @gmail.com
+        if (/correo|email|mail/i.test(c.Field)) {
+            return `
+            <div class="db-field">
+                <label>${label}</label>
+                <input type="email" name="${c.Field}" value="${actual}"
+                       data-validate="email" pattern=".*@gmail\\.com"
+                       placeholder="${label} (ej. usuario@gmail.com)...">
+            </div>`;
+        }
+
+        // Campos de DNI / teléfono: texto numérico, sin rueda, sin negativos
+        const esDni = /(^|_)dni$/i.test(c.Field);
+        const esTelefono = c.Field === 'NumeroDeContacto';
+        if (esDni || esTelefono) {
+            const validate = esDni ? 'dni' : 'telefono';
+            return `
+            <div class="db-field">
+                <label>${label}</label>
+                <input type="text" inputmode="numeric" pattern="[0-9]*"
+                       name="${c.Field}" value="${actual}"
+                       data-validate="${validate}"
+                       minlength="8" maxlength="12"
+                       placeholder="${label}...">
+            </div>`;
+        }
         return `
             <div class="db-field">
                 <label>${label}</label>
@@ -892,6 +1087,7 @@ async function dbMostrarFormulario(datos = {}) {
     // aula), o sea 4 viajes HTTP encadenados. Promise.all los convierte en
     // uno solo.
     const fks = campos.filter(c => c.tablaReferenciada);
+    console.debug('[dbMostrarFormulario] FKs=', fks.map(c=>c.Field));
 
     await Promise.all(fks.map(async c => {
         const select = document.getElementById(`db-select-${c.Field}`);
@@ -901,7 +1097,7 @@ async function dbMostrarFormulario(datos = {}) {
             const res   = await fetch(`${API_BASE}/crud.php?tabla=${c.tablaReferenciada}&accion=listar`);
 
             if (res.status === 401) {
-                sessionStorage.removeItem('aura_session');
+                sessionStorage.removeItem('atlas_session');
                 window.location.href = 'index.html';
                 return;
             }
@@ -913,10 +1109,21 @@ async function dbMostrarFormulario(datos = {}) {
             }
 
             const valorActual = datos[c.Field] ?? '';
+            // Si la columna referenciada es descriptiva (ej. Curso, Nombre_Completo),
+            // la usamos directamente como etiqueta. Si parece un ID, buscamos otra
+            // columna descriptiva de la tabla padre; si no hay, mostramos el valor.
+            const pareceId = /^(id|id[a-z_]+)$/i;
+            let labelKey = null;
+            if (!pareceId.test(c.columnaReferenciada)) {
+                labelKey = c.columnaReferenciada;
+            }
+            if (!labelKey) {
+                labelKey = Object.keys(fila).find(k =>
+                    k !== c.columnaReferenciada && !pareceId.test(k)
+                ) || Object.keys(fila).find(k => k !== c.columnaReferenciada);
+            }
             select.innerHTML = '<option value="">-- Elegir --</option>' + filas.map(fila => {
                 const valor = fila[c.columnaReferenciada];
-                // usamos el primer campo que no sea el id como texto visible de la opción
-                const labelKey = Object.keys(fila).find(k => k !== c.columnaReferenciada);
                 const texto    = labelKey ? fila[labelKey] : `#${valor}`;
                 const selected = String(valor) === String(valorActual) ? 'selected' : '';
                 return `<option value="${valor}" ${selected}>${texto}</option>`;
@@ -961,6 +1168,31 @@ async function dbGuardar() {
     const datos  = {};
     campos.forEach(i => { datos[i.name] = i.value; });
 
+    // Validaciones de DNI / teléfono
+    const dni = datos.DNI ?? datos.Dni;
+    if (dni !== undefined && dni !== '') {
+        if (!/^\d{8,}$/.test(String(dni))) {
+            dbFormMsg('El DNI debe tener al menos 8 dígitos numéricos.', false);
+            return;
+        }
+    }
+    if (datos.NumeroDeContacto !== undefined && datos.NumeroDeContacto !== '') {
+        if (!/^\d{8,}$/.test(String(datos.NumeroDeContacto))) {
+            dbFormMsg('El número de contacto debe tener al menos 8 dígitos.', false);
+            return;
+        }
+    }
+
+    // Validaciones de correo: deben terminar en @gmail.com
+    for (const [k, v] of Object.entries(datos)) {
+        if (/correo|email|mail/i.test(k) && v) {
+            if (!String(v).trim().toLowerCase().endsWith('@gmail.com')) {
+                dbFormMsg(`El campo ${k.replace(/_/g, ' ')} debe terminar en @gmail.com.`, false);
+                return;
+            }
+        }
+    }
+
     const accion = editandoPK ? 'editar' : 'agregar';
     if (editandoPK) Object.assign(datos, editandoPK); // agrega la/s clave/s para identificar la fila a actualizar
 
@@ -992,7 +1224,44 @@ async function dbGuardar() {
 /* — ELIMINAR — */
 async function dbEliminar(pk) {
     if (!tablaActiva) return;
-    if (!confirm('¿Eliminar este registro?')) return;
+
+    const msgEl = document.getElementById('db-bar-msg');
+    if (msgEl.dataset.confirming === 'true') {
+        msgEl.dataset.confirming = 'false';
+        msgEl.textContent = '';
+        msgEl.className = 'db-msg';
+        return;
+    }
+
+    msgEl.dataset.confirming = 'true';
+    msgEl.className = 'db-msg db-msg-err';
+    const pkEscaped = JSON.stringify(pk).replace(/"/g, '"');
+    msgEl.innerHTML = `
+        ¿Eliminar este registro?
+        <button class="db-btn-confirm" onclick='dbConfirmarEliminar(${pkEscaped})'>
+            <i class="fas fa-check"></i> Confirmar
+        </button>
+        <button class="db-btn-cancel-confirm" onclick="dbCancelarEliminar()">
+            <i class="fas fa-times"></i> Cancelar
+        </button>
+    `;
+
+    clearTimeout(msgEl._t);
+    msgEl._t = setTimeout(() => {
+        if (msgEl.dataset.confirming === 'true') {
+            msgEl.dataset.confirming = 'false';
+            msgEl.textContent = '';
+            msgEl.className = 'db-msg';
+        }
+    }, 10000);
+}
+
+async function dbConfirmarEliminar(pk) {
+    const msgEl = document.getElementById('db-bar-msg');
+    msgEl.dataset.confirming = 'false';
+    msgEl.className = 'db-msg';
+    msgEl.textContent = 'Eliminando...';
+
     try {
         const res = await fetch(`${API_BASE}/crud.php`, {
             method:  'POST',
@@ -1006,6 +1275,13 @@ async function dbEliminar(pk) {
         console.error('Error al eliminar:', e);
         dbBarMsg('Error al eliminar.', false);
     }
+}
+
+function dbCancelarEliminar() {
+    const msgEl = document.getElementById('db-bar-msg');
+    msgEl.dataset.confirming = 'false';
+    msgEl.textContent = '';
+    msgEl.className = 'db-msg';
 }
 
 /* — CANCELAR FORMULARIO — */
@@ -1025,19 +1301,19 @@ function renderGuia() {
     panelContent.innerHTML = `
         <div class="guide-step">
             <h4><i class="fab fa-whatsapp"></i> WhatsApp</h4>
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/aABU_YO1MZo?si=PPPVZFDPNXAgLbNv" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            <iframe width="560" height="315" src="https://www.yotube.com/embed/aABU_YO1MZo?si=PPPVZFDPNXAgLbNv" title="Explicacion" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
         </div>
         <div class="guide-step">
             <h4><i class="fas fa-images"></i> Base de datos</h4>
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/aABU_YO1MZo?si=PPPVZFDPNXAgLbNv" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>        
+            <iframe width="560" height="315" src="https://www.yutube.com/embed/aABU_YO1MZo?si=PPPVZFDPNXAgLbNv" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>        
         </div>
         <div class="guide-step">
             <h4><i class="fas fa-images"></i> Imágenes</h4>
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/aABU_YO1MZo?si=PPPVZFDPNXAgLbNv" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>        
+            <iframe width="560" height="315" src="https://www.yutube.com/embed/aABU_YO1MZo?si=PPPVZFDPNXAgLbNv" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>        
         </div>
         <div class="guide-step">
             <h4><i class="fas fa-compass"></i> Guía</h4>
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/aABU_YO1MZo?si=PPPVZFDPNXAgLbNv" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>        
+            <iframe width="560" height="315" src="https://www.yotube.com/embed/aABU_YO1MZo?si=PPPVZFDPNXAgLbNv" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>        
         </div>
     `;
 }
@@ -1061,10 +1337,32 @@ function setupCardActions() {
 
 // Inicializar
 (async () => {
-    // Los permisos tienen que estar antes de pintar nada: si se filtrara
-    // antes de que llegue la respuesta, un Director vería el módulo
-    // usuarios destellando y después desaparecería.
     await cargarPermisos();
     aplicarPermisosACards();
     setupCardActions();
+
+    // Bloquear rueda y limpiar no-numéricos en campos DNI/teléfono
+    panelContent.addEventListener('wheel', (e) => {
+        if (e.target && e.target.matches && e.target.matches('input[data-validate]')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    panelContent.addEventListener('keydown', (e) => {
+        if (e.target && e.target.matches && e.target.matches('input[data-validate]')) {
+            const v = e.target.getAttribute('data-validate');
+            if (v === 'dni' || v === 'telefono') {
+                if (['-', 'e', 'E', '+', '.'].includes(e.key)) e.preventDefault();
+            }
+        }
+    });
+
+    panelContent.addEventListener('input', (e) => {
+        if (e.target && e.target.matches && e.target.matches('input[data-validate]')) {
+            const v = e.target.getAttribute('data-validate');
+            if (v === 'dni' || v === 'telefono') {
+                e.target.value = e.target.value.replace(/\D/g, '');
+            }
+        }
+    });
 })();

@@ -53,8 +53,8 @@ if ($fila['EstadoUsuario'] !== 'activo') {
     responder([
         'success' => false,
         'mensaje' => $fila['EstadoUsuario'] === 'pendiente'
-            ? 'Tu cuenta está pendiente de aprobación. Avisá al directorio.'
-            : 'Tu cuenta fue rechazada. Contactá al directorio.'
+            ? 'Tu cuenta está pendiente de aprobación. Avisá al director.'
+            : 'Tu cuenta fue rechazada. Contactá al director.'
     ], 403);
 }
 
